@@ -24,6 +24,7 @@ setuptools.setup(
         f"aws-cdk.aws-autoscaling=={CDK_VERSION}",
         f"aws-cdk.aws-cloudwatch=={CDK_VERSION}",
         f"aws-cdk.aws-ec2=={CDK_VERSION}",
+        f"aws-cdk.aws-elasticloadbalancingv2=={CDK_VERSION}",
         f"aws-cdk.aws-iam=={CDK_VERSION}",
         f"aws-cdk.aws-sns=={CDK_VERSION}",
         f"aws-cdk.core=={CDK_VERSION}"

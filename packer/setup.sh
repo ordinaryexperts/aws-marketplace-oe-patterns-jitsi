@@ -39,9 +39,23 @@ chmod +x ./install
 ./install auto
 cd -
 
-# TODO: continue jitsi app configuration here...
+#
+# Jitsi configuration
+#  * https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart
+#
 
+apt-get -y install apache2 debconf-utils gnupg2
+apt install apt-transport-https
+
+curl https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
+echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | sudo tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
+apt update
+
+# not configuring firewall with ufw in favor of AWS security groups
+
+#
 # AMI hardening
+#
 
 # Update the AMI tools before using them
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/building-shared-amis.html#public-amis-update-ami-tools

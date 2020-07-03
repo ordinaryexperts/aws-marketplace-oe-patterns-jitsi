@@ -97,5 +97,34 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 EOF
 systemctl enable amazon-cloudwatch-agent
 systemctl start amazon-cloudwatch-agent
-          
+
+#
+# Jitsi configuration
+#
+
+# TODO: setup FQDN?
+
+# preselect install questions
+echo "jitsi-videobridge2 jitsi-videobridge/jvb-hostname string ${JitsiHostname}" | debconf-set-selections
+echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)" | debconf-set-selections
+
+apt-get -y install jitsi-meet
+
+# TODO: generate Let's Encrypt certificate?
+printf "${LetsEncryptCertificateEmail}\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+
+# TODO: configure behind NAT Gateway?
+
+# raise systemd limits
+sed -i 's/#DefaultLimitNOFILE=/DefaultLimitNOFILE=65000/g' /etc/systemd/system.conf
+sed -i 's/#DefaultLimitNPROC=/DefaultLimitNPROC=65000/g' /etc/systemd/system.conf
+sed -i 's/#DefaultTasksMax=/DefaultTasksMax=65000/g' /etc/systemd/system.conf
+
+systemctl daemon-reload
+systemctl restart jitsi-videobridge2
+
+#
+# cloudformation signal
+#
+
 cfn-signal --exit-code $? --stack ${AWS::StackName} --resource JitsiAsg --region ${AWS::Region}
