@@ -522,10 +522,10 @@ class JitsiStack(core.Stack):
             )
         )
 
-        alb_sg = aws_ec2.CfnSecurityGroup(
+        nlb_sg = aws_ec2.CfnSecurityGroup(
             self,
-            "AlbSg",
-            group_description="Alb Sg",
+            "NlbSg",
+            group_description="Nlb Sg",
             vpc_id=core.Token.as_string(
                 core.Fn.condition_if(
                     vpc_not_given_condition.logical_id,
@@ -534,90 +534,90 @@ class JitsiStack(core.Stack):
                 )
             )
         )
-        alb_http_ingress = aws_ec2.CfnSecurityGroupIngress(
+        nlb_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
-            "AlbSgHttpIngress",
+            "NlbSgHttpIngress",
             cidr_ip="0.0.0.0/0",
             description="Allow from anyone on port 80",
             from_port=80,
-            group_id=alb_sg.ref,
+            group_id=nlb_sg.ref,
             ip_protocol="tcp",
             to_port=80
         )
-        alb_https_ingress = aws_ec2.CfnSecurityGroupIngress(
+        nlb_https_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
-            "AlbSgHttpsIngress",
+            "NlbSgHttpsIngress",
             cidr_ip="0.0.0.0/0",
             description="Allow from anyone on port 443",
             from_port=443,
-            group_id=alb_sg.ref,
+            group_id=nlb_sg.ref,
             ip_protocol="tcp",
             to_port=443
         )
-        alb_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
+        nlb_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
-            "AlbFallbackNetworkAudioVideoIngressSg",
+            "NlbFallbackNetworkAudioVideoIngressSg",
             cidr_ip="0.0.0.0/0",
             description="Allow from anyone on port 4443",
             from_port=4443,
-            group_id=alb_sg.ref,
+            group_id=nlb_sg.ref,
             ip_protocol="tcp",
             to_port=4443
         )
-        alb_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
+        nlb_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
-            "AlbGeneralNetworkAudioVideoIngressSg",
+            "NlbGeneralNetworkAudioVideoIngressSg",
             cidr_ip="0.0.0.0/0",
             description="Allow from anyone on port 1000",
             from_port=1000,
-            group_id=alb_sg.ref,
+            group_id=nlb_sg.ref,
             ip_protocol="udp",
             to_port=1000
         )
 
+        # TODO: parameterize and conditionalize cidr_ip
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpSgIngress",
+            cidr_ip=vpc.attr_cidr_block,
             from_port=80,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
-            source_security_group_id=alb_sg.ref,
             to_port=80
         )
         jitsi_https_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpsSgIngress",
+            cidr_ip=vpc.attr_cidr_block,
             from_port=443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
-            source_security_group_id=alb_sg.ref,
             to_port=443
         )
         jitsi_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiFallbackNetworkAudioVideoSgIngress",
+            cidr_ip=vpc.attr_cidr_block,
             from_port=4443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
-            source_security_group_id=alb_sg.ref,
             to_port=4443
         )
         jitsi_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiGeneralNetworkAudioVideoSgIngress",
+            cidr_ip=vpc.attr_cidr_block,
             from_port=1000,
             group_id=jitsi_sg.ref,
             ip_protocol="udp",
-            source_security_group_id=alb_sg.ref,
             to_port=1000
         )
 
         # elasticloadbalancing
-        alb = aws_elasticloadbalancingv2.CfnLoadBalancer(
+        nlb = aws_elasticloadbalancingv2.CfnLoadBalancer(
             self,
-            "AppAlb",
+            "AppNlb",
             scheme="internet-facing",
-            security_groups=[ alb_sg.ref ],
             subnets=core.Token.as_list(
                 core.Fn.condition_if(
                     vpc_not_given_condition.logical_id,
@@ -631,7 +631,7 @@ class JitsiStack(core.Stack):
                     ]
                 )
             ),
-            type="application"
+            type="network"
         )
         http_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
             self,
@@ -639,7 +639,7 @@ class JitsiStack(core.Stack):
             health_check_enabled=None,
             health_check_interval_seconds=None,
             port=80,
-            protocol="HTTP",
+            protocol="TCP",
             target_type="instance",
             vpc_id=core.Token.as_string(
                 core.Fn.condition_if(
@@ -658,9 +658,9 @@ class JitsiStack(core.Stack):
                     type="forward"
                 )
             ],
-            load_balancer_arn=alb.ref,
+            load_balancer_arn=nlb.ref,
             port=80,
-            protocol="HTTP"
+            protocol="TCP"
         )
         https_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
             self,
@@ -668,7 +668,7 @@ class JitsiStack(core.Stack):
             health_check_enabled=None,
             health_check_interval_seconds=None,
             port=443,
-            protocol="HTTPS",
+            protocol="TLS",
             target_type="instance",
             vpc_id=core.Token.as_string(
                 core.Fn.condition_if(
@@ -692,9 +692,67 @@ class JitsiStack(core.Stack):
                     type="forward"
                 )
             ],
-            load_balancer_arn=alb.ref,
+            load_balancer_arn=nlb.ref,
             port=443,
-            protocol="HTTPS"
+            protocol="TLS"
+        )
+        fallback_network_audio_video_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
+            self,
+            "FallbackNetworkAudioVideoTargetGroup",
+            health_check_enabled=None,
+            health_check_interval_seconds=None,
+            port=4443,
+            protocol="TCP",
+            target_type="instance",
+            vpc_id=core.Token.as_string(
+                core.Fn.condition_if(
+                    vpc_not_given_condition.logical_id,
+                    vpc.ref,
+                    vpc_id_param.value_as_string
+                )
+            )
+        )
+        fallback_network_audio_video_listener = aws_elasticloadbalancingv2.CfnListener(
+            self,
+            "FallbackNetworkAudioVideoListener",
+            default_actions=[
+                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
+                    target_group_arn=fallback_network_audio_video_target_group.ref,
+                    type="forward"
+                )
+            ],
+            load_balancer_arn=nlb.ref,
+            port=4443,
+            protocol="TCP"
+        )
+        general_network_audio_video_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
+            self,
+            "GeneralNetworkAudioVideoTargetGroup",
+            health_check_enabled=None,
+            health_check_interval_seconds=None,
+            port=1000,
+            protocol="UDP",
+            target_type="instance",
+            vpc_id=core.Token.as_string(
+                core.Fn.condition_if(
+                    vpc_not_given_condition.logical_id,
+                    vpc.ref,
+                    vpc_id_param.value_as_string
+                )
+            )
+        )
+        general_network_audio_video_listener = aws_elasticloadbalancingv2.CfnListener(
+            self,
+            "GeneralNetworkAudioVideoListener",
+            default_actions=[
+                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
+                    target_group_arn=general_network_audio_video_target_group.ref,
+                    type="forward"
+                )
+            ],
+            load_balancer_arn=nlb.ref,
+            port=1000,
+            protocol="UDP"
         )
 
         # autoscaling
@@ -789,3 +847,14 @@ class JitsiStack(core.Stack):
                 }
             }
         }
+
+        #
+        # OUTPUTS
+        #
+
+        # TODO: remove
+        vpc_cidr_block_output = core.CfnOutput(
+            self,
+            "VpcCidrBlock",
+            value=vpc.attr_cidr_block
+        )
