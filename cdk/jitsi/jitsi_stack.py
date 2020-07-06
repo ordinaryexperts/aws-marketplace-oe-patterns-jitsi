@@ -118,7 +118,7 @@ class JitsiStack(core.Stack):
         ec2_instance_type_param = core.CfnParameter(
             self,
             "InstanceType",
-            default="t2.medium",
+            default="t3.xlarge",
             description="Required: The EC2 instance type for the application Auto Scaling Group."
         )
         jitsi_hostname_param = core.CfnParameter(
@@ -136,6 +136,12 @@ class JitsiStack(core.Stack):
             "NotificationEmail",
             default="",
             description="Optional: Specify an email address to get emails about deploys and other system events."
+        )
+        vpc_cidr_block_param = core.CfnParameter(
+            self,
+            "VpcCidrBlock",
+            default="",
+            description="Optional: Specify the VPC CIDR block."
         )
         vpc_id_param = core.CfnParameter(
             self,
@@ -405,6 +411,13 @@ class JitsiStack(core.Stack):
         )
 
         # cloudwatch
+        app_log_group = aws_logs.CfnLogGroup(
+            self,
+            "JitsiAppLogGroup",
+            retention_in_days=TWO_YEARS_IN_DAYS
+        )
+        app_log_group.cfn_options.update_replace_policy = core.CfnDeletionPolicy.RETAIN
+        app_log_group.cfn_options.deletion_policy = core.CfnDeletionPolicy.RETAIN
         system_log_group = aws_logs.CfnLogGroup(
             self,
             "JitsiSystemLogGroup",
@@ -579,7 +592,13 @@ class JitsiStack(core.Stack):
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpSgIngress",
-            cidr_ip=vpc.attr_cidr_block,
+            cidr_ip=core.Token.as_string(
+                core.Fn.condition_if(
+                    vpc_given_condition.logical_id,
+                    vpc_cidr_block_param.value_as_string,
+                    vpc.attr_cidr_block
+                )
+            ),
             from_port=80,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -588,7 +607,13 @@ class JitsiStack(core.Stack):
         jitsi_https_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpsSgIngress",
-            cidr_ip=vpc.attr_cidr_block,
+            cidr_ip=core.Token.as_string(
+                core.Fn.condition_if(
+                    vpc_given_condition.logical_id,
+                    vpc_cidr_block_param.value_as_string,
+                    vpc.attr_cidr_block
+                )
+            ),
             from_port=443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -597,7 +622,13 @@ class JitsiStack(core.Stack):
         jitsi_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiFallbackNetworkAudioVideoSgIngress",
-            cidr_ip=vpc.attr_cidr_block,
+            cidr_ip=core.Token.as_string(
+                core.Fn.condition_if(
+                    vpc_given_condition.logical_id,
+                    vpc_cidr_block_param.value_as_string,
+                    vpc.attr_cidr_block
+                )
+            ),
             from_port=4443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -606,7 +637,13 @@ class JitsiStack(core.Stack):
         jitsi_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiGeneralNetworkAudioVideoSgIngress",
-            cidr_ip=vpc.attr_cidr_block,
+            cidr_ip=core.Token.as_string(
+                core.Fn.condition_if(
+                    vpc_given_condition.logical_id,
+                    vpc_cidr_block_param.value_as_string,
+                    vpc.attr_cidr_block
+                )
+            ),
             from_port=1000,
             group_id=jitsi_sg.ref,
             ip_protocol="udp",
@@ -851,10 +888,3 @@ class JitsiStack(core.Stack):
         #
         # OUTPUTS
         #
-
-        # TODO: remove
-        vpc_cidr_block_output = core.CfnOutput(
-            self,
-            "VpcCidrBlock",
-            value=vpc.attr_cidr_block
-        )

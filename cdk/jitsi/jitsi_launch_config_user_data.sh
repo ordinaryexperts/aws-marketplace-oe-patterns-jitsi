@@ -87,6 +87,24 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
             "log_group_name": "${JitsiSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/amazon/ssm/errors.log",
             "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/jitsi/jicofo.log",
+            "log_group_name": "${JitsiAppLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/jitsi/jicofo.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/jitsi/jvb.log",
+            "log_group_name": "${JitsiAppLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/jitsi/jvb.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/prosody/prosody.log",
+            "log_group_name": "${JitsiAppLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/prosody/prosody.log",
+            "timezone": "UTC"
           }
         ]
       }
