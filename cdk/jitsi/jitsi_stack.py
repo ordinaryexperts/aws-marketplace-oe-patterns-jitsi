@@ -139,12 +139,6 @@ class JitsiStack(core.Stack):
             default="",
             description="Optional: Specify an email address to get emails about deploys and other system events."
         )
-        vpc_cidr_block_param = core.CfnParameter(
-            self,
-            "VpcCidrBlock",
-            default="",
-            description="Optional: Specify the VPC CIDR block."
-        )
 
         #
         # CONDITIONS
@@ -370,14 +364,7 @@ class JitsiStack(core.Stack):
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpSgIngress",
-            # TODO: integrate Vpc CIDR into cdk-common or find way to reference
-            cidr_ip=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc.given_condition.logical_id,
-                    vpc_cidr_block_param.value_as_string,
-                    vpc.vpc.attr_cidr_block
-                )
-            ),
+            cidr_ip=vpc.cidr_ip(),
             from_port=80,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -386,14 +373,7 @@ class JitsiStack(core.Stack):
         jitsi_https_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpsSgIngress",
-            # TODO: integrate Vpc CIDR into cdk-common or find way to reference
-            cidr_ip=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc.given_condition.logical_id,
-                    vpc_cidr_block_param.value_as_string,
-                    vpc.vpc.attr_cidr_block
-                )
-            ),
+            cidr_ip=vpc.cidr_ip(),
             from_port=443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -402,14 +382,7 @@ class JitsiStack(core.Stack):
         jitsi_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiFallbackNetworkAudioVideoSgIngress",
-            # TODO: integrate Vpc CIDR into cdk-common or find way to reference
-            cidr_ip=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc.given_condition.logical_id,
-                    vpc_cidr_block_param.value_as_string,
-                    vpc.vpc.attr_cidr_block
-                )
-            ),
+            cidr_ip=vpc.cidr_ip(),
             from_port=4443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -418,14 +391,7 @@ class JitsiStack(core.Stack):
         jitsi_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiGeneralNetworkAudioVideoSgIngress",
-            # TODO: integrate Vpc CIDR into cdk-common or find way to reference
-            cidr_ip=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc.given_condition.logical_id,
-                    vpc_cidr_block_param.value_as_string,
-                    vpc.vpc.attr_cidr_block
-                )
-            ),
+            cidr_ip=vpc.cidr_ip(),
             from_port=1000,
             group_id=jitsi_sg.ref,
             ip_protocol="udp",
