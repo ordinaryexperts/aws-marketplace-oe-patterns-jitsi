@@ -12,6 +12,8 @@ from aws_cdk import (
     core
 )
 
+from oe_patterns_cdk_common import Vpc
+
 TWO_YEARS_IN_DAYS=731
 # TODO: uncomment after a release
 #template_version = subprocess.check_output(["git", "describe"]).strip().decode('ascii')
@@ -143,36 +145,6 @@ class JitsiStack(core.Stack):
             default="",
             description="Optional: Specify the VPC CIDR block."
         )
-        vpc_id_param = core.CfnParameter(
-            self,
-            "VpcId",
-            default="",
-            description="Optional: Specify the VPC ID.  If not specified, a VPC will be created."
-        )
-        vpc_private_subnet_id1_param = core.CfnParameter(
-            self,
-            "VpcPrivateSubnetId1",
-            default="",
-            description="Optional: Specify Subnet ID for first private subnet."
-        )
-        vpc_private_subnet_id2_param = core.CfnParameter(
-            self,
-            "VpcPrivateSubnetId2",
-            default="",
-            description="Optional: Specify Subnet ID for second private subnet."
-        )
-        vpc_public_subnet_id1_param = core.CfnParameter(
-            self,
-            "VpcPublicSubnetId1",
-            default="",
-            description="Optional: Specify Subnet ID for first public subnet."
-        )
-        vpc_public_subnet_id2_param = core.CfnParameter(
-            self,
-            "VpcPublicSubnetId2",
-            default="",
-            description="Optional: Specify Subnet ID for second public subnet."
-        )
 
         #
         # CONDITIONS
@@ -193,198 +165,16 @@ class JitsiStack(core.Stack):
             "NotificationEmailExists",
             expression=core.Fn.condition_not(core.Fn.condition_equals(sns_notification_email_param.value, ""))
         )
-        vpc_given_condition = core.CfnCondition(
-            self,
-            "VpcGiven",
-            expression=core.Fn.condition_not(core.Fn.condition_equals(vpc_id_param.value, ""))
-        )
-        vpc_not_given_condition = core.CfnCondition(
-            self,
-            "VpcNotGiven",
-            expression=core.Fn.condition_equals(vpc_id_param.value, "")
-        )
 
         #
         # RESOURCES
         #
 
         # vpc
-        vpc = aws_ec2.CfnVPC(
+        vpc = Vpc(
             self,
-            "Vpc",
-            cidr_block="10.0.0.0/16",
-            enable_dns_hostnames=True,
-            enable_dns_support=True,
-            instance_tenancy="default",
-            tags=[core.CfnTag(key="Name", value="{}/Vpc".format(core.Aws.STACK_NAME))]
+            "Vpc"
         )
-        vpc.cfn_options.condition=vpc_not_given_condition
-        vpc_igw = aws_ec2.CfnInternetGateway(
-            self,
-            "VpcInternetGateway",
-            tags=[core.CfnTag(key="Name", value="{}/Vpc".format(core.Aws.STACK_NAME))]
-        )
-        vpc_igw.cfn_options.condition=vpc_not_given_condition
-        vpc_igw_attachment = aws_ec2.CfnVPCGatewayAttachment(
-            self,
-            "VpcIGWAttachment",
-            vpc_id=vpc.ref,
-            internet_gateway_id=vpc_igw.ref
-        )
-        vpc_igw_attachment.cfn_options.condition=vpc_not_given_condition
-        vpc_public_route_table = aws_ec2.CfnRouteTable(
-            self,
-            "VpcPublicRouteTable",
-            vpc_id=vpc.ref,
-            tags=[core.CfnTag(key="Name", value="{}/Vpc/PublicRouteTable".format(core.Aws.STACK_NAME))]
-        )
-        vpc_public_route_table.cfn_options.condition=vpc_not_given_condition
-        vpc_public_default_route = aws_ec2.CfnRoute(
-            self,
-            "VpcPublicDefaultRoute",
-            route_table_id=vpc_public_route_table.ref,
-            destination_cidr_block="0.0.0.0/0",
-            gateway_id=vpc_igw.ref
-        )
-        vpc_public_default_route.cfn_options.condition=vpc_not_given_condition
-        vpc_public_subnet1 = aws_ec2.CfnSubnet(
-            self,
-            "VpcPublicSubnet1",
-            cidr_block="10.0.0.0/18",
-            vpc_id=vpc.ref,
-            assign_ipv6_address_on_creation=None,
-            availability_zone=core.Fn.select(0, core.Fn.get_azs()),
-            map_public_ip_on_launch=True,
-            tags=[
-                core.CfnTag(key="Name", value="{}/Vpc/PublicSubnet1".format(core.Aws.STACK_NAME))
-            ]
-        )
-        vpc_public_subnet1.cfn_options.condition=vpc_not_given_condition
-        vpc_public_subnet1_route_table_association = aws_ec2.CfnSubnetRouteTableAssociation(
-            self,
-            "VpcPublicSubnet1RouteTableAssociation",
-            route_table_id=vpc_public_route_table.ref,
-            subnet_id=vpc_public_subnet1.ref
-        )
-        vpc_public_subnet1_route_table_association.cfn_options.condition=vpc_not_given_condition
-        vpc_public_subnet1_eip = aws_ec2.CfnEIP(
-            self,
-            "VpcPublicSubnet1EIP",
-            domain="vpc"
-        )
-        vpc_public_subnet1_eip.cfn_options.condition=vpc_not_given_condition
-        vpc_public_subnet1_nat_gateway = aws_ec2.CfnNatGateway(
-            self,
-            "VpcPublicSubnet1NATGateway",
-            allocation_id=vpc_public_subnet1_eip.attr_allocation_id,
-            subnet_id=vpc_public_subnet1.ref,
-            tags=[core.CfnTag(key="Name", value="{}/Vpc/PublicSubnet1".format(core.Aws.STACK_NAME))]
-        )
-        vpc_public_subnet1_nat_gateway.cfn_options.condition=vpc_not_given_condition
-        vpc_public_subnet2 = aws_ec2.CfnSubnet(
-            self,
-            "VpcPublicSubnet2",
-            cidr_block="10.0.64.0/18",
-            vpc_id=vpc.ref,
-            assign_ipv6_address_on_creation=None,
-            availability_zone=core.Fn.select(1, core.Fn.get_azs()),
-            map_public_ip_on_launch=True,
-            tags=[
-                core.CfnTag(key="Name", value="{}/Vpc/PublicSubnet2".format(core.Aws.STACK_NAME))
-            ]
-        )
-        vpc_public_subnet2.cfn_options.condition=vpc_not_given_condition
-        vpc_public_subnet2_route_table_association = aws_ec2.CfnSubnetRouteTableAssociation(
-            self,
-            "VpcPublicSubnet2RouteTableAssociation",
-            route_table_id=vpc_public_route_table.ref,
-            subnet_id=vpc_public_subnet2.ref
-        )
-        vpc_public_subnet2_route_table_association.cfn_options.condition=vpc_not_given_condition
-        vpc_public_subnet2_eip = aws_ec2.CfnEIP(
-            self,
-            "VpcPublicSubnet2EIP",
-            domain="vpc"
-        )
-        vpc_public_subnet2_eip.cfn_options.condition=vpc_not_given_condition
-        vpc_public_subnet2_nat_gateway = aws_ec2.CfnNatGateway(
-            self,
-            "VpcPublicSubnet2NATGateway",
-            allocation_id=vpc_public_subnet2_eip.attr_allocation_id,
-            subnet_id=vpc_public_subnet1.ref,
-            tags=[core.CfnTag(key="Name", value="{}/Vpc/PublicSubnet2".format(core.Aws.STACK_NAME))]
-        )
-        vpc_public_subnet2_nat_gateway.cfn_options.condition=vpc_not_given_condition
-        vpc_private_subnet1 = aws_ec2.CfnSubnet(
-            self,
-            "VpcPrivateSubnet1",
-            cidr_block="10.0.128.0/18",
-            vpc_id=vpc.ref,
-            assign_ipv6_address_on_creation=None,
-            availability_zone=core.Fn.select(0, core.Fn.get_azs()),
-            map_public_ip_on_launch=False,
-            tags=[
-                core.CfnTag(key="Name", value="{}/Vpc/PrivateSubnet1".format(core.Aws.STACK_NAME))
-            ]
-        )
-        vpc_private_subnet1.cfn_options.condition=vpc_not_given_condition
-        vpc_private_subnet1_route_table = aws_ec2.CfnRouteTable(
-            self,
-            "VpcPrivateSubnet1RouteTable",
-            vpc_id=vpc.ref,
-            tags=[core.CfnTag(key="Name", value="{}/Vpc/PrivateSubnet1".format(core.Aws.STACK_NAME))]
-        )
-        vpc_private_subnet1_route_table.cfn_options.condition=vpc_not_given_condition
-        vpc_private_subnet1_route_table_association = aws_ec2.CfnSubnetRouteTableAssociation(
-            self,
-            "VpcPrivateSubnet1RouteTableAssociation",
-            route_table_id=vpc_private_subnet1_route_table.ref,
-            subnet_id=vpc_private_subnet1.ref
-        )
-        vpc_private_subnet1_route_table_association.cfn_options.condition=vpc_not_given_condition
-        vpc_private_subnet1_default_route = aws_ec2.CfnRoute(
-            self,
-            "VpcPrivateSubnet1DefaultRoute",
-            route_table_id=vpc_private_subnet1_route_table.ref,
-            destination_cidr_block="0.0.0.0/0",
-            nat_gateway_id=vpc_public_subnet1_nat_gateway.ref
-        )
-        vpc_private_subnet1_default_route.cfn_options.condition=vpc_not_given_condition
-        vpc_private_subnet2 = aws_ec2.CfnSubnet(
-            self,
-            "VpcPrivateSubnet2",
-            cidr_block="10.0.192.0/18",
-            vpc_id=vpc.ref,
-            assign_ipv6_address_on_creation=None,
-            availability_zone=core.Fn.select(1, core.Fn.get_azs()),
-            map_public_ip_on_launch=False,
-            tags=[
-                core.CfnTag(key="Name", value="{}/Vpc/PrivateSubnet2".format(core.Aws.STACK_NAME))
-            ]
-        )
-        vpc_private_subnet2.cfn_options.condition=vpc_not_given_condition
-        vpc_private_subnet2_route_table = aws_ec2.CfnRouteTable(
-            self,
-            "VpcPrivateSubnet2RouteTable",
-            vpc_id=vpc.ref,
-            tags=[core.CfnTag(key="Name", value="{}/Vpc/PrivateSubnet2".format(core.Aws.STACK_NAME))]
-        )
-        vpc_private_subnet2_route_table.cfn_options.condition=vpc_not_given_condition
-        vpc_private_subnet2_route_table_association = aws_ec2.CfnSubnetRouteTableAssociation(
-            self,
-            "VpcPrivateSubnet2RouteTableAssociation",
-            route_table_id=vpc_private_subnet2_route_table.ref,
-            subnet_id=vpc_private_subnet2.ref
-        )
-        vpc_private_subnet2_route_table_association.cfn_options.condition=vpc_not_given_condition
-        vpc_private_subnet2_default_route = aws_ec2.CfnRoute(
-            self,
-            "VpcPrivateSubnet2DefaultRoute",
-            route_table_id=vpc_private_subnet2_route_table.ref,
-            destination_cidr_block="0.0.0.0/0",
-            nat_gateway_id=vpc_public_subnet2_nat_gateway.ref
-        )
-        vpc_private_subnet2_default_route.cfn_options.condition=vpc_not_given_condition
 
         # sns
         sns_notification_topic = aws_sns.CfnTopic(
@@ -499,13 +289,7 @@ class JitsiStack(core.Stack):
             self,
             "JitsiSg",
             group_description="Jitsi security group",
-            vpc_id=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc_not_given_condition.logical_id,
-                    vpc.ref,
-                    vpc_id_param.value_as_string
-                )
-            )
+            vpc_id=vpc.id()
         )
 
         ec2_instance_profile = aws_iam.CfnInstanceProfile(
@@ -539,13 +323,7 @@ class JitsiStack(core.Stack):
             self,
             "NlbSg",
             group_description="Nlb Sg",
-            vpc_id=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc_not_given_condition.logical_id,
-                    vpc.ref,
-                    vpc_id_param.value_as_string
-                )
-            )
+            vpc_id=vpc.id()
         )
         nlb_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
@@ -592,11 +370,12 @@ class JitsiStack(core.Stack):
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpSgIngress",
+            # TODO: integrate Vpc CIDR into cdk-common or find way to reference
             cidr_ip=core.Token.as_string(
                 core.Fn.condition_if(
-                    vpc_given_condition.logical_id,
+                    vpc.given_condition.logical_id,
                     vpc_cidr_block_param.value_as_string,
-                    vpc.attr_cidr_block
+                    vpc.vpc.attr_cidr_block
                 )
             ),
             from_port=80,
@@ -607,11 +386,12 @@ class JitsiStack(core.Stack):
         jitsi_https_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpsSgIngress",
+            # TODO: integrate Vpc CIDR into cdk-common or find way to reference
             cidr_ip=core.Token.as_string(
                 core.Fn.condition_if(
-                    vpc_given_condition.logical_id,
+                    vpc.given_condition.logical_id,
                     vpc_cidr_block_param.value_as_string,
-                    vpc.attr_cidr_block
+                    vpc.vpc.attr_cidr_block
                 )
             ),
             from_port=443,
@@ -622,11 +402,12 @@ class JitsiStack(core.Stack):
         jitsi_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiFallbackNetworkAudioVideoSgIngress",
+            # TODO: integrate Vpc CIDR into cdk-common or find way to reference
             cidr_ip=core.Token.as_string(
                 core.Fn.condition_if(
-                    vpc_given_condition.logical_id,
+                    vpc.given_condition.logical_id,
                     vpc_cidr_block_param.value_as_string,
-                    vpc.attr_cidr_block
+                    vpc.vpc.attr_cidr_block
                 )
             ),
             from_port=4443,
@@ -637,11 +418,12 @@ class JitsiStack(core.Stack):
         jitsi_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiGeneralNetworkAudioVideoSgIngress",
+            # TODO: integrate Vpc CIDR into cdk-common or find way to reference
             cidr_ip=core.Token.as_string(
                 core.Fn.condition_if(
-                    vpc_given_condition.logical_id,
+                    vpc.given_condition.logical_id,
                     vpc_cidr_block_param.value_as_string,
-                    vpc.attr_cidr_block
+                    vpc.vpc.attr_cidr_block
                 )
             ),
             from_port=1000,
@@ -655,19 +437,7 @@ class JitsiStack(core.Stack):
             self,
             "AppNlb",
             scheme="internet-facing",
-            subnets=core.Token.as_list(
-                core.Fn.condition_if(
-                    vpc_not_given_condition.logical_id,
-                    [
-                        vpc_public_subnet1.ref,
-                        vpc_public_subnet2.ref
-                    ],
-                    [
-                        vpc_public_subnet_id1_param.value_as_string,
-                        vpc_public_subnet_id2_param.value_as_string
-                    ]
-                )
-            ),
+            subnets=vpc.public_subnet_ids(),
             type="network"
         )
         http_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
@@ -678,13 +448,7 @@ class JitsiStack(core.Stack):
             port=80,
             protocol="TCP",
             target_type="instance",
-            vpc_id=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc_not_given_condition.logical_id,
-                    vpc.ref,
-                    vpc_id_param.value_as_string
-                )
-            )
+            vpc_id=vpc.id()
         )
         http_listener = aws_elasticloadbalancingv2.CfnListener(
             self,
@@ -707,13 +471,7 @@ class JitsiStack(core.Stack):
             port=443,
             protocol="TLS",
             target_type="instance",
-            vpc_id=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc_not_given_condition.logical_id,
-                    vpc.ref,
-                    vpc_id_param.value_as_string
-                )
-            )
+            vpc_id=vpc.id()
         )
         https_listener = aws_elasticloadbalancingv2.CfnListener(
             self,
@@ -741,13 +499,7 @@ class JitsiStack(core.Stack):
             port=4443,
             protocol="TCP",
             target_type="instance",
-            vpc_id=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc_not_given_condition.logical_id,
-                    vpc.ref,
-                    vpc_id_param.value_as_string
-                )
-            )
+            vpc_id=vpc.id()
         )
         fallback_network_audio_video_listener = aws_elasticloadbalancingv2.CfnListener(
             self,
@@ -770,13 +522,7 @@ class JitsiStack(core.Stack):
             port=1000,
             protocol="UDP",
             target_type="instance",
-            vpc_id=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc_not_given_condition.logical_id,
-                    vpc.ref,
-                    vpc_id_param.value_as_string
-                )
-            )
+            vpc_id=vpc.id()
         )
         general_network_audio_video_listener = aws_elasticloadbalancingv2.CfnListener(
             self,
@@ -804,19 +550,7 @@ class JitsiStack(core.Stack):
                 http_target_group.ref,
                 https_target_group.ref
             ],
-            vpc_zone_identifier=core.Token.as_list(
-                core.Fn.condition_if(
-                    vpc_given_condition.logical_id,
-                    [
-                        vpc_private_subnet_id1_param.value_as_string,
-                        vpc_private_subnet_id2_param.value_as_string
-                    ],
-                    [
-                        vpc_private_subnet1.ref,
-                        vpc_private_subnet2.ref
-                    ]
-                )
-            )
+            vpc_zone_identifier=vpc.private_subnet_ids()
         )
         asg.cfn_options.creation_policy=core.CfnCreationPolicy(
             resource_signal=core.CfnResourceSignal(
@@ -849,38 +583,13 @@ class JitsiStack(core.Stack):
                             acm_certificate_arn_param.logical_id
                         ]
                     },
-                    {
-                        "Label": {
-                            "default": "VPC"
-                        },
-                        "Parameters": [
-                            vpc_id_param.logical_id,
-                            vpc_private_subnet_id1_param.logical_id,
-                            vpc_private_subnet_id2_param.logical_id,
-                            vpc_public_subnet_id1_param.logical_id,
-                            vpc_public_subnet_id2_param.logical_id
-                        ]
-                    }
+                    vpc.metadata_parameter_group()
                 ],
                 "ParameterLabels": {
                     sns_notification_email_param.logical_id: {
                         "default": "Notification Email"
                     },
-                    vpc_id_param.logical_id: {
-                        "default": "VPC ID"
-                    },
-                    vpc_private_subnet_id1_param.logical_id: {
-                        "default": "Private Subnet ID 1"
-                    },
-                    vpc_private_subnet_id2_param.logical_id: {
-                        "default": "Private Subnet ID 2"
-                    },
-                    vpc_public_subnet_id1_param.logical_id: {
-                        "default": "Public Subnet ID 1"
-                    },
-                    vpc_public_subnet_id2_param.logical_id: {
-                        "default": "Public Subnet ID 2"
-                    }
+                    **vpc.metadata_parameter_labels()
                 }
             }
         }
