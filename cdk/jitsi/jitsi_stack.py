@@ -313,58 +313,10 @@ class JitsiStack(core.Stack):
             )
         )
 
-        nlb_sg = aws_ec2.CfnSecurityGroup(
-            self,
-            "NlbSg",
-            group_description="Nlb Sg",
-            vpc_id=vpc.id()
-        )
-        nlb_http_ingress = aws_ec2.CfnSecurityGroupIngress(
-            self,
-            "NlbSgHttpIngress",
-            cidr_ip="0.0.0.0/0",
-            description="Allow from anyone on port 80",
-            from_port=80,
-            group_id=nlb_sg.ref,
-            ip_protocol="tcp",
-            to_port=80
-        )
-        nlb_https_ingress = aws_ec2.CfnSecurityGroupIngress(
-            self,
-            "NlbSgHttpsIngress",
-            cidr_ip="0.0.0.0/0",
-            description="Allow from anyone on port 443",
-            from_port=443,
-            group_id=nlb_sg.ref,
-            ip_protocol="tcp",
-            to_port=443
-        )
-        nlb_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
-            self,
-            "NlbFallbackNetworkAudioVideoIngressSg",
-            cidr_ip="0.0.0.0/0",
-            description="Allow from anyone on port 4443",
-            from_port=4443,
-            group_id=nlb_sg.ref,
-            ip_protocol="tcp",
-            to_port=4443
-        )
-        nlb_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
-            self,
-            "NlbGeneralNetworkAudioVideoIngressSg",
-            cidr_ip="0.0.0.0/0",
-            description="Allow from anyone on port 1000",
-            from_port=1000,
-            group_id=nlb_sg.ref,
-            ip_protocol="udp",
-            to_port=1000
-        )
-
-        # TODO: parameterize and conditionalize cidr_ip
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpSgIngress",
-            cidr_ip=vpc.cidr_ip(),
+            cidr_ip="0.0.0.0/0",
             from_port=80,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -373,7 +325,7 @@ class JitsiStack(core.Stack):
         jitsi_https_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpsSgIngress",
-            cidr_ip=vpc.cidr_ip(),
+            cidr_ip="0.0.0.0/0",
             from_port=443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -382,7 +334,7 @@ class JitsiStack(core.Stack):
         jitsi_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiFallbackNetworkAudioVideoSgIngress",
-            cidr_ip=vpc.cidr_ip(),
+            cidr_ip="0.0.0.0/0",
             from_port=4443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -391,7 +343,7 @@ class JitsiStack(core.Stack):
         jitsi_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiGeneralNetworkAudioVideoSgIngress",
-            cidr_ip=vpc.cidr_ip(),
+            cidr_ip="0.0.0.0/0",
             from_port=1000,
             group_id=jitsi_sg.ref,
             ip_protocol="udp",
@@ -459,7 +411,7 @@ class JitsiStack(core.Stack):
         )
         fallback_network_audio_video_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
             self,
-            "FallbackNetworkAudioVideoTargetGroup",
+            "AsgFallbackNetworkAudioVideoTargetGroup",
             health_check_enabled=None,
             health_check_interval_seconds=None,
             port=4443,
@@ -482,7 +434,7 @@ class JitsiStack(core.Stack):
         )
         general_network_audio_video_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
             self,
-            "GeneralNetworkAudioVideoTargetGroup",
+            "AsgGeneralNetworkAudioVideoTargetGroup",
             health_check_enabled=None,
             health_check_interval_seconds=None,
             port=1000,
@@ -514,7 +466,9 @@ class JitsiStack(core.Stack):
             min_size=core.Token.as_string(autoscaling_min_size_param.value),
             target_group_arns=[
                 http_target_group.ref,
-                https_target_group.ref
+                https_target_group.ref,
+                fallback_network_audio_video_target_group.ref,
+                general_network_audio_video_target_group.ref
             ],
             vpc_zone_identifier=vpc.private_subnet_ids()
         )
