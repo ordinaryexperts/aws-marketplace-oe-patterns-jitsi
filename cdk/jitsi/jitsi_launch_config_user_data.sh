@@ -129,7 +129,22 @@ echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-si
 apt-get -y install jitsi-meet
 
 # generate Let's Encrypt certificate
-printf "${LetsEncryptCertificateEmail}\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+# https://stackoverflow.com/questions/57904900/aws-cloudformation-template-with-letsencrypt-ssl-certificate
+# TODO: 1) move to instance metadata script 2) configure system email to user announcing that DNS is waiting
+while true; do
+    printf "${LetsEncryptCertificateEmail}\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+
+    if [ $? -eq 0 ]
+    then
+        echo "LetsEncrypt success"
+        break
+    else
+        echo "Retry..."
+
+        # https://letsencrypt.org/docs/rate-limits/
+        sleep 730
+    fi
+done
 
 # configure behind NAT Gateway?
 #sed -i 's/^org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES/#&/' /etc/jitsi/videobridge/sip-communicator.properties
