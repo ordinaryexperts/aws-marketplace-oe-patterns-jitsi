@@ -5,17 +5,17 @@ with open("README.md") as fp:
     long_description = fp.read()
 
 
-CDK_VERSION="1.49.0"
+CDK_VERSION="1.57.0"
 
 setuptools.setup(
-    name="jisti",
+    name="jitsi",
     version="0.0.1",
 
-    description="An empty CDK Python app",
+    description="AWS Marketplace pattern for Jitsi video conference by Ordinary Experts.",
     long_description=long_description,
     long_description_content_type="text/markdown",
 
-    author="author",
+    author="Ordinary Experts",
 
     package_dir={"": "jitsi"},
     packages=setuptools.find_packages(where="jitsi"),
