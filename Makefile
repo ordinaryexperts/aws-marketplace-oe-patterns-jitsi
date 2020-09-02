@@ -61,10 +61,8 @@ clean-snapshots-tcat-all-regions:
 deploy: build
 	docker-compose run -w /code/cdk --rm jitsi cdk deploy \
 	--require-approval never \
-	--parameters CertificateArn=arn:aws:acm:us-east-1:992593896645:certificate/77ba53df-8613-4620-8b45-3d22940059d4 \
 	--parameters JitsiHostname=oe-patterns-jitsi-acarlton.dev.patterns.ordinaryexperts.com \
 	--parameters LetsEncryptCertificateEmail=aaron@ordinaryexperts.com \
-	--parameters VpcCidrBlock=0.0.0.0/0 \
 	--parameters VpcId=vpc-00425deda4c835455 \
 	--parameters VpcPrivateSubnetId1=subnet-030c94b9795c6cb96 \
 	--parameters VpcPrivateSubnetId2=subnet-079290412ce63c4d5 \
