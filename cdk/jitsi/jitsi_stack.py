@@ -535,60 +535,27 @@ class JitsiStack(core.Stack):
             )
         )
 
-        nlb_sg = aws_ec2.CfnSecurityGroup(
+        ec2_instance = aws_ec2.CfnInstance(
             self,
-            "NlbSg",
-            group_description="Nlb Sg",
-            vpc_id=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc_not_given_condition.logical_id,
-                    vpc.ref,
-                    vpc_id_param.value_as_string
+            "JitsiInstance",
+            iam_instance_profile=ec2_instance_profile.ref,
+            image_id=core.Fn.find_in_map("AWSAMIRegionMap", core.Aws.REGION, "OEJITSI"),
+            instance_type=ec2_instance_type_param.value_as_string,
+            security_group_ids=[ jitsi_sg.attr_group_id ],
+            subnet_id=vpc.public_subnet1_id(),
+            user_data=(
+                core.Fn.base64(
+                    core.Fn.sub(
+                        jitsi_launch_config_user_data,
+                        {
+                            "JitsiHostname": jitsi_hostname_param.value_as_string,
+                            "LetsEncryptCertificateEmail": lets_encrypt_certificate_email_param.value_as_string
+                        }
+                    )
                 )
             )
         )
-        nlb_http_ingress = aws_ec2.CfnSecurityGroupIngress(
-            self,
-            "NlbSgHttpIngress",
-            cidr_ip="0.0.0.0/0",
-            description="Allow from anyone on port 80",
-            from_port=80,
-            group_id=nlb_sg.ref,
-            ip_protocol="tcp",
-            to_port=80
-        )
-        nlb_https_ingress = aws_ec2.CfnSecurityGroupIngress(
-            self,
-            "NlbSgHttpsIngress",
-            cidr_ip="0.0.0.0/0",
-            description="Allow from anyone on port 443",
-            from_port=443,
-            group_id=nlb_sg.ref,
-            ip_protocol="tcp",
-            to_port=443
-        )
-        nlb_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
-            self,
-            "NlbFallbackNetworkAudioVideoIngressSg",
-            cidr_ip="0.0.0.0/0",
-            description="Allow from anyone on port 4443",
-            from_port=4443,
-            group_id=nlb_sg.ref,
-            ip_protocol="tcp",
-            to_port=4443
-        )
-        nlb_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
-            self,
-            "NlbGeneralNetworkAudioVideoIngressSg",
-            cidr_ip="0.0.0.0/0",
-            description="Allow from anyone on port 1000",
-            from_port=1000,
-            group_id=nlb_sg.ref,
-            ip_protocol="udp",
-            to_port=1000
-        )
 
-        # TODO: parameterize and conditionalize cidr_ip
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpSgIngress",
@@ -637,17 +604,11 @@ class JitsiStack(core.Stack):
         jitsi_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiGeneralNetworkAudioVideoSgIngress",
-            cidr_ip=core.Token.as_string(
-                core.Fn.condition_if(
-                    vpc_given_condition.logical_id,
-                    vpc_cidr_block_param.value_as_string,
-                    vpc.attr_cidr_block
-                )
-            ),
-            from_port=1000,
+            cidr_ip="0.0.0.0/0",
+            from_port=10000,
             group_id=jitsi_sg.ref,
             ip_protocol="udp",
-            to_port=1000
+            to_port=10000
         )
 
         # elasticloadbalancing
@@ -767,7 +728,7 @@ class JitsiStack(core.Stack):
             "GeneralNetworkAudioVideoTargetGroup",
             health_check_enabled=None,
             health_check_interval_seconds=None,
-            port=1000,
+            port=10000,
             protocol="UDP",
             target_type="instance",
             vpc_id=core.Token.as_string(
@@ -788,7 +749,7 @@ class JitsiStack(core.Stack):
                 )
             ],
             load_balancer_arn=nlb.ref,
-            port=1000,
+            port=10000,
             protocol="UDP"
         )
 

@@ -27,7 +27,8 @@ setuptools.setup(
         f"aws-cdk.aws-elasticloadbalancingv2=={CDK_VERSION}",
         f"aws-cdk.aws-iam=={CDK_VERSION}",
         f"aws-cdk.aws-sns=={CDK_VERSION}",
-        f"aws-cdk.core=={CDK_VERSION}"
+        f"aws-cdk.core=={CDK_VERSION}",
+        f"oe-patterns-cdk-common@git+https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-cdk-common@develop"
     ],
 
     python_requires=">=3.6",
