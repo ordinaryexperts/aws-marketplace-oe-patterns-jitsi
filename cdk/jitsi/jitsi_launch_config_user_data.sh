@@ -1,5 +1,4 @@
 #!/bin/bash                                                                                                            
-
 # aws cloudwatch
 cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 {
@@ -129,12 +128,11 @@ echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-si
 
 apt-get -y install jitsi-meet
 
-# TODO: generate Let's Encrypt certificate?
+# generate Let's Encrypt certificate
 printf "${LetsEncryptCertificateEmail}\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
 
 # configure behind NAT Gateway?
 #sed -i 's/^org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES/#&/' /etc/jitsi/videobridge/sip-communicator.properties
-
 #LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
 #PUBLIC_IP=$(curl http://icanhzip.com)
 #echo "org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$LOCAL_IP" >> /etc/jitsi/videobridge/sip-communicator.properties
@@ -147,9 +145,4 @@ sed -i 's/#DefaultTasksMax=/DefaultTasksMax=65000/g' /etc/systemd/system.conf
 
 systemctl daemon-reload
 systemctl restart jitsi-videobridge2
-
-#
-# cloudformation signal
-#
-
-cfn-signal --exit-code $? --stack ${AWS::StackName} --resource JitsiAsg --region ${AWS::Region}
+systemctl restart apache2

@@ -87,36 +87,6 @@ class JitsiStack(core.Stack):
         # PARAMETERS
         #
 
-        acm_certificate_arn_param = core.CfnParameter(
-            self,
-            "CertificateArn",
-            default="",
-            description="Optional: Specify the ARN of a ACM Certificate to configure HTTPS."
-        )
-        autoscaling_desired_capacity_param = core.CfnParameter(
-            self,
-            "JitsiAsgDesiredCapacity",
-            default=1,
-            description="Required: The desired capacity of the Auto Scaling Group.",
-            min_value=0,
-            type="Number"
-        )
-        autoscaling_max_size_param = core.CfnParameter(
-            self,
-            "JitsiAsgMaxSize",
-            default=2,
-            description="Required: The maximum size of the Auto Scaling Group.",
-            min_value=0,
-            type="Number"
-        )
-        autoscaling_min_size_param = core.CfnParameter(
-            self,
-            "JitsiAsgMinSize",
-            default=1,
-            description="Required: The minimum size of the Auto Scaling Group.",
-            min_value=0,
-            type="Number"
-        )
         ec2_instance_type_param = core.CfnParameter(
             self,
             "InstanceType",
@@ -144,16 +114,6 @@ class JitsiStack(core.Stack):
         # CONDITIONS
         #
         
-        acm_certificate_arn_exists_condition = core.CfnCondition(
-            self,
-            "CertificateArnExists",
-            expression=core.Fn.condition_not(core.Fn.condition_equals(acm_certificate_arn_param.value, ""))
-        )
-        acm_certificate_arn_does_not_exist_condition = core.CfnCondition(
-            self,
-            "CertificateArnNotExists",
-            expression=core.Fn.condition_equals(acm_certificate_arn_param.value, "")
-        )
         sns_notification_email_exists_condition = core.CfnCondition(
             self,
             "NotificationEmailExists",
@@ -312,7 +272,6 @@ class JitsiStack(core.Stack):
                 )
             )
         )
-
         ec2_instance = aws_ec2.CfnInstance(
             self,
             "JitsiInstance",
@@ -332,6 +291,20 @@ class JitsiStack(core.Stack):
                     )
                 )
             )
+        )
+        core.Tag.add(ec2_instance, "Name", "{}/Jitsi".format(core.Aws.STACK_NAME))
+
+        eip = aws_ec2.CfnEIP(
+            self,
+            "Eip",
+            instance_id=ec2_instance.ref
+        )
+        core.Tag.add(eip, "Name", "{}/Jitsi".format(core.Aws.STACK_NAME))
+        eip_association = aws_ec2.CfnEIPAssociation(
+            self,
+            "EipAssociation",
+            eip=eip.ref,
+            instance_id=ec2_instance.ref
         )
 
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
@@ -371,146 +344,6 @@ class JitsiStack(core.Stack):
             to_port=10000
         )
 
-        # elasticloadbalancing
-        nlb = aws_elasticloadbalancingv2.CfnLoadBalancer(
-            self,
-            "AppNlb",
-            scheme="internet-facing",
-            subnets=vpc.public_subnet_ids(),
-            type="network"
-        )
-        http_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
-            self,
-            "AsgHttpTargetGroup",
-            health_check_enabled=None,
-            health_check_interval_seconds=None,
-            port=80,
-            protocol="TCP",
-            target_type="instance",
-            vpc_id=vpc.id()
-        )
-        http_listener = aws_elasticloadbalancingv2.CfnListener(
-            self,
-            "HttpListener",
-            default_actions=[
-                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
-                    target_group_arn=http_target_group.ref,
-                    type="forward"
-                )
-            ],
-            load_balancer_arn=nlb.ref,
-            port=80,
-            protocol="TCP"
-        )
-        https_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
-            self,
-            "AsgHttpsTargetGroup",
-            health_check_enabled=None,
-            health_check_interval_seconds=None,
-            port=443,
-            protocol="TLS",
-            target_type="instance",
-            vpc_id=vpc.id()
-        )
-        https_listener = aws_elasticloadbalancingv2.CfnListener(
-            self,
-            "HttpsListener",
-            certificates=[
-                aws_elasticloadbalancingv2.CfnListener.CertificateProperty(
-                    certificate_arn=acm_certificate_arn_param.value_as_string
-                )
-            ],
-            default_actions=[
-                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
-                    target_group_arn=https_target_group.ref,
-                    type="forward"
-                )
-            ],
-            load_balancer_arn=nlb.ref,
-            port=443,
-            protocol="TLS"
-        )
-        fallback_network_audio_video_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
-            self,
-            "AsgFallbackNetworkAudioVideoTargetGroup",
-            health_check_enabled=None,
-            health_check_interval_seconds=None,
-            port=4443,
-            protocol="TCP",
-            target_type="instance",
-            vpc_id=vpc.id()
-        )
-        fallback_network_audio_video_listener = aws_elasticloadbalancingv2.CfnListener(
-            self,
-            "FallbackNetworkAudioVideoListener",
-            default_actions=[
-                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
-                    target_group_arn=fallback_network_audio_video_target_group.ref,
-                    type="forward"
-                )
-            ],
-            load_balancer_arn=nlb.ref,
-            port=4443,
-            protocol="TCP"
-        )
-        general_network_audio_video_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
-            self,
-            "AsgGeneralNetworkAudioVideoTargetGroup",
-            health_check_enabled=None,
-            health_check_interval_seconds=None,
-            port=10000,
-            protocol="UDP",
-            target_type="instance",
-            vpc_id=vpc.id()
-        )
-        general_network_audio_video_listener = aws_elasticloadbalancingv2.CfnListener(
-            self,
-            "GeneralNetworkAudioVideoListener",
-            default_actions=[
-                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
-                    target_group_arn=general_network_audio_video_target_group.ref,
-                    type="forward"
-                )
-            ],
-            load_balancer_arn=nlb.ref,
-            port=10000,
-            protocol="UDP"
-        )
-
-        # autoscaling
-        asg = aws_autoscaling.CfnAutoScalingGroup(
-            self,
-            "JitsiAsg",
-            launch_configuration_name=ec2_launch_config.ref,
-            desired_capacity=core.Token.as_string(autoscaling_desired_capacity_param.value),
-            max_size=core.Token.as_string(autoscaling_max_size_param.value),
-            min_size=core.Token.as_string(autoscaling_min_size_param.value),
-            target_group_arns=[
-                http_target_group.ref,
-                https_target_group.ref,
-                fallback_network_audio_video_target_group.ref,
-                general_network_audio_video_target_group.ref
-            ],
-            vpc_zone_identifier=vpc.private_subnet_ids()
-        )
-        asg.cfn_options.creation_policy=core.CfnCreationPolicy(
-            resource_signal=core.CfnResourceSignal(
-                count=1,
-                timeout="PT15M"
-            )
-        )
-        asg.cfn_options.update_policy=core.CfnUpdatePolicy(
-            auto_scaling_rolling_update=core.CfnAutoScalingRollingUpdate(
-                min_instances_in_service=1,
-                pause_time="PT15M",
-                wait_on_resource_signals=True
-            ),
-            auto_scaling_scheduled_action=core.CfnAutoScalingScheduledAction(
-                ignore_unmodified_group_size_properties=True
-            )
-        )
-        core.Tag.add(asg, "Name", "{}/JitsiAsg".format(core.Aws.STACK_NAME))
-
         # AWS::CloudFormation::Interface
         self.template_options.metadata = {
             "OE::Patterns::TemplateVersion": template_version,
@@ -520,9 +353,7 @@ class JitsiStack(core.Stack):
                         "Label": {
                             "default": "Application Config"
                         },
-                        "Parameters": [
-                            acm_certificate_arn_param.logical_id
-                        ]
+                        "Parameters": []
                     },
                     vpc.metadata_parameter_group()
                 ],
@@ -538,3 +369,10 @@ class JitsiStack(core.Stack):
         #
         # OUTPUTS
         #
+
+        eip_output = core.CfnOutput(
+            self,
+            "EipOutput",
+            description="The Elastic IP address associated with the Jitsi EC2 instance. For DNS assignment.",
+            value=eip.ref
+        )
