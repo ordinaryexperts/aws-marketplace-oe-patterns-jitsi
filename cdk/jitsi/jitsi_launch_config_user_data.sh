@@ -129,8 +129,10 @@ echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-si
 apt-get -y install jitsi-meet
 
 # generate Let's Encrypt certificate
-# https://stackoverflow.com/questions/57904900/aws-cloudformation-template-with-letsencrypt-ssl-certificate
-# TODO: 1) move to instance metadata script 2) configure system email to user announcing that DNS is waiting
+#   https://stackoverflow.com/questions/57904900/aws-cloudformation-template-with-letsencrypt-ssl-certificate
+# TODO:
+#   1. move to instance metadata script
+#   2. configure system email to user announcing that DNS is waiting
 while true; do
     printf "${LetsEncryptCertificateEmail}\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
 
@@ -146,12 +148,13 @@ while true; do
     fi
 done
 
-# configure behind NAT Gateway?
-#sed -i 's/^org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES/#&/' /etc/jitsi/videobridge/sip-communicator.properties
-#LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
-#PUBLIC_IP=$(curl http://icanhzip.com)
-#echo "org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$LOCAL_IP" >> /etc/jitsi/videobridge/sip-communicator.properties
-#echo "org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$PUBLIC_IP" >> /etc/jitsi/videobridge/sip-communicator.properties
+# configure behind NAT Gateway
+JVB_CONFIG=/etc/jitsi/videobridge/sip-communicator.properties
+sed -i 's/^org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES/#&/' $JVB_CONFIG
+LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+PUBLIC_IP="${JitsiPublicIP}"
+echo "org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$LOCAL_IP" >> $JVB_CONFIG
+echo "org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$PUBLIC_IP" >> $JVB_CONFIG
 
 # raise systemd limits
 sed -i 's/#DefaultLimitNOFILE=/DefaultLimitNOFILE=65000/g' /etc/systemd/system.conf

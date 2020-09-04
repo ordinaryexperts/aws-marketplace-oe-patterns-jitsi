@@ -246,6 +246,12 @@ class JitsiStack(core.Stack):
             vpc_id=vpc.id()
         )
 
+        eip = aws_ec2.CfnEIP(
+            self,
+            "Eip",
+        )
+        core.Tag.add(eip, "Name", "{}/Jitsi".format(core.Aws.STACK_NAME))
+
         ec2_instance_profile = aws_iam.CfnInstanceProfile(
 	    self,
 	    "JitsiInstanceProfile",
@@ -266,6 +272,7 @@ class JitsiStack(core.Stack):
                         jitsi_launch_config_user_data,
                         {
                             "JitsiHostname": jitsi_hostname_param.value_as_string,
+                            "JitsiPublicIP": eip.ref,
                             "LetsEncryptCertificateEmail": lets_encrypt_certificate_email_param.value_as_string
                         }
                     )
@@ -286,6 +293,7 @@ class JitsiStack(core.Stack):
                         jitsi_launch_config_user_data,
                         {
                             "JitsiHostname": jitsi_hostname_param.value_as_string,
+                            "JitsiPublicIP": eip.ref,
                             "LetsEncryptCertificateEmail": lets_encrypt_certificate_email_param.value_as_string
                         }
                     )
@@ -294,12 +302,6 @@ class JitsiStack(core.Stack):
         )
         core.Tag.add(ec2_instance, "Name", "{}/Jitsi".format(core.Aws.STACK_NAME))
 
-        eip = aws_ec2.CfnEIP(
-            self,
-            "Eip",
-            instance_id=ec2_instance.ref
-        )
-        core.Tag.add(eip, "Name", "{}/Jitsi".format(core.Aws.STACK_NAME))
         eip_association = aws_ec2.CfnEIPAssociation(
             self,
             "EipAssociation",
