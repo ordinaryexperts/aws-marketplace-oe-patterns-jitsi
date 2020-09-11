@@ -287,7 +287,7 @@ class JitsiStack(core.Stack):
             "JitsiAsg",
             launch_configuration_name=ec2_launch_config.ref,
             desired_capacity="1",
-            max_size="2",
+            max_size="1",
             min_size="1",
             vpc_zone_identifier=vpc.public_subnet_ids()
         )
