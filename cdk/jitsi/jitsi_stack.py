@@ -8,6 +8,7 @@ from aws_cdk import (
     aws_elasticloadbalancingv2,
     aws_iam,
     aws_logs,
+    aws_route53,
     aws_sns,
     core
 )
@@ -103,6 +104,12 @@ class JitsiStack(core.Stack):
             "LetsEncryptCertificateEmail",
             description="Required: The email address to use for Let's Encrypt certificate validation."
         )
+        route_53_hosted_zone_name_param = core.CfnParameter(
+            self,
+            "Route53HostedZoneName",
+            default="",
+            description="Optional: A Route 53 hosted zone name for which a DNS record should be automatically added. Should reflect the domain part of the Jitsi Hostname parameter."
+        )
         sns_notification_email_param = core.CfnParameter(
             self,
             "NotificationEmail",
@@ -116,8 +123,13 @@ class JitsiStack(core.Stack):
 
         sns_notification_email_exists_condition = core.CfnCondition(
             self,
-            "NotificationEmailExists",
+            "NotificationEmailExistsCondition",
             expression=core.Fn.condition_not(core.Fn.condition_equals(sns_notification_email_param.value, ""))
+        )
+        route_53_hosted_zone_name_exists_condition = core.CfnCondition(
+            self,
+            "HostedZoneNameExistsCondition",
+            expression=core.Fn.condition_not(core.Fn.condition_equals(route_53_hosted_zone_name_param.value, ""))
         )
 
         #
@@ -344,6 +356,18 @@ class JitsiStack(core.Stack):
             to_port=10000
         )
 
+        # route 53
+        record_set = aws_route53.CfnRecordSet(
+            self,
+            "RecordSet",
+            hosted_zone_name=route_53_hosted_zone_name_param.value_as_string,
+            name=jitsi_hostname_param.value_as_string,
+            resource_records=[ eip.ref ],
+            ttl="60",
+            type="A"
+        )
+        record_set.cfn_options.condition=route_53_hosted_zone_name_exists_condition
+
         # AWS::CloudFormation::Interface
         self.template_options.metadata = {
             "OE::Patterns::TemplateVersion": template_version,
@@ -353,11 +377,16 @@ class JitsiStack(core.Stack):
                         "Label": {
                             "default": "Application Config"
                         },
-                        "Parameters": []
+                        "Parameters": [
+                            route_53_hosted_zone_name_param.logical_id
+                        ]
                     },
                     vpc.metadata_parameter_group()
                 ],
                 "ParameterLabels": {
+                    route_53_hosted_zone_name_param.logical_id: {
+                        "default": "AWS Route 53 Hosted Zone Name"
+                    },
                     sns_notification_email_param.logical_id: {
                         "default": "Notification Email"
                     },
