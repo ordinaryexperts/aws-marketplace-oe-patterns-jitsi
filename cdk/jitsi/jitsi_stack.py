@@ -88,6 +88,12 @@ class JitsiStack(core.Stack):
         # PARAMETERS
         #
 
+        cidr_block_param = core.CfnParameter(
+            self,
+            "CidrBlock",
+            default="0.0.0.0/0",
+            description="Optional: A CIDR block to restrict access to the Jitsi application."
+        )
         ec2_instance_type_param = core.CfnParameter(
             self,
             "InstanceType",
@@ -322,7 +328,7 @@ class JitsiStack(core.Stack):
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpSgIngress",
-            cidr_ip="0.0.0.0/0",
+            cidr_ip=cidr_block_param.value_as_string,
             from_port=80,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -331,7 +337,7 @@ class JitsiStack(core.Stack):
         jitsi_https_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpsSgIngress",
-            cidr_ip="0.0.0.0/0",
+            cidr_ip=cidr_block_param.value_as_string,
             from_port=443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -340,7 +346,7 @@ class JitsiStack(core.Stack):
         jitsi_fallback_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiFallbackNetworkAudioVideoSgIngress",
-            cidr_ip="0.0.0.0/0",
+            cidr_ip=cidr_block_param.value_as_string,
             from_port=4443,
             group_id=jitsi_sg.ref,
             ip_protocol="tcp",
@@ -349,7 +355,7 @@ class JitsiStack(core.Stack):
         jitsi_general_network_audio_video_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiGeneralNetworkAudioVideoSgIngress",
-            cidr_ip="0.0.0.0/0",
+            cidr_ip=cidr_block_param.value_as_string,
             from_port=10000,
             group_id=jitsi_sg.ref,
             ip_protocol="udp",
@@ -378,12 +384,16 @@ class JitsiStack(core.Stack):
                             "default": "Application Config"
                         },
                         "Parameters": [
+                            cidr_block_param.logical_id,
                             route_53_hosted_zone_name_param.logical_id
                         ]
                     },
                     vpc.metadata_parameter_group()
                 ],
                 "ParameterLabels": {
+                    cidr_block_param.logical_id: {
+                        "default": "CIDR Block"
+                    },
                     route_53_hosted_zone_name_param.logical_id: {
                         "default": "AWS Route 53 Hosted Zone Name"
                     },
