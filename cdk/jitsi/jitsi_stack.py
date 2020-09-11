@@ -8,6 +8,7 @@ from aws_cdk import (
     aws_elasticloadbalancingv2,
     aws_iam,
     aws_logs,
+    aws_route53,
     aws_sns,
     core
 )
@@ -109,6 +110,12 @@ class JitsiStack(core.Stack):
             "LetsEncryptCertificateEmail",
             description="Required: The email address to use for Let's Encrypt certificate validation."
         )
+        route_53_hosted_zone_name_param = core.CfnParameter(
+            self,
+            "Route53HostedZoneName",
+            default="",
+            description="Optional: A Route 53 hosted zone name for which a DNS record should be automatically added. Should reflect the domain part of the Jitsi Hostname parameter."
+        )
         sns_notification_email_param = core.CfnParameter(
             self,
             "NotificationEmail",
@@ -119,11 +126,16 @@ class JitsiStack(core.Stack):
         #
         # CONDITIONS
         #
-        
+
         sns_notification_email_exists_condition = core.CfnCondition(
             self,
-            "NotificationEmailExists",
+            "NotificationEmailExistsCondition",
             expression=core.Fn.condition_not(core.Fn.condition_equals(sns_notification_email_param.value, ""))
+        )
+        route_53_hosted_zone_name_exists_condition = core.CfnCondition(
+            self,
+            "HostedZoneNameExistsCondition",
+            expression=core.Fn.condition_not(core.Fn.condition_equals(route_53_hosted_zone_name_param.value, ""))
         )
 
         #
@@ -214,6 +226,7 @@ class JitsiStack(core.Stack):
                             aws_iam.PolicyStatement(
                                 effect=aws_iam.Effect.ALLOW,
                                 actions=[
+                                    "ec2:AssociateAddress",
                                     "ec2:DescribeVolumes",
                                     "ec2:DescribeTags",
                                     "cloudwatch:GetMetricStatistics",
@@ -256,7 +269,7 @@ class JitsiStack(core.Stack):
             self,
             "Eip",
         )
-        core.Tag.add(eip, "Name", "{}/Jitsi".format(core.Aws.STACK_NAME))
+        core.Tag.add(eip, "Name", "{}/Eip".format(core.Aws.STACK_NAME))
 
         ec2_instance_profile = aws_iam.CfnInstanceProfile(
 	    self,
@@ -285,35 +298,32 @@ class JitsiStack(core.Stack):
                 )
             )
         )
-        ec2_instance = aws_ec2.CfnInstance(
+
+        # autoscaling
+        asg = aws_autoscaling.CfnAutoScalingGroup(
             self,
-            "JitsiInstance",
-            iam_instance_profile=ec2_instance_profile.ref,
-            image_id=core.Fn.find_in_map("AWSAMIRegionMap", core.Aws.REGION, "OEJITSI"),
-            instance_type=ec2_instance_type_param.value_as_string,
-            security_group_ids=[ jitsi_sg.attr_group_id ],
-            subnet_id=vpc.public_subnet1_id(),
-            user_data=(
-                core.Fn.base64(
-                    core.Fn.sub(
-                        jitsi_launch_config_user_data,
-                        {
-                            "JitsiHostname": jitsi_hostname_param.value_as_string,
-                            "JitsiPublicIP": eip.ref,
-                            "LetsEncryptCertificateEmail": lets_encrypt_certificate_email_param.value_as_string
-                        }
-                    )
-                )
+            "JitsiAsg",
+            launch_configuration_name=ec2_launch_config.ref,
+            desired_capacity="1",
+            max_size="1",
+            min_size="1",
+            vpc_zone_identifier=vpc.public_subnet_ids()
+        )
+        asg.cfn_options.creation_policy=core.CfnCreationPolicy(
+            resource_signal=core.CfnResourceSignal(
+                count=1,
+                timeout="PT15M"
             )
         )
-        core.Tag.add(ec2_instance, "Name", "{}/Jitsi".format(core.Aws.STACK_NAME))
-
-        eip_association = aws_ec2.CfnEIPAssociation(
-            self,
-            "EipAssociation",
-            eip=eip.ref,
-            instance_id=ec2_instance.ref
+        asg.cfn_options.update_policy=core.CfnUpdatePolicy(
+            auto_scaling_rolling_update=core.CfnAutoScalingRollingUpdate(
+                max_batch_size=1,
+                min_instances_in_service=0,
+                pause_time="PT15M",
+                wait_on_resource_signals=True
+            )
         )
+        core.Tag.add(asg, "Name", "{}/JitsiAsg".format(core.Aws.STACK_NAME))
 
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
@@ -352,6 +362,18 @@ class JitsiStack(core.Stack):
             to_port=10000
         )
 
+        # route 53
+        record_set = aws_route53.CfnRecordSet(
+            self,
+            "RecordSet",
+            hosted_zone_name=route_53_hosted_zone_name_param.value_as_string,
+            name=jitsi_hostname_param.value_as_string,
+            resource_records=[ eip.ref ],
+            ttl="60",
+            type="A"
+        )
+        record_set.cfn_options.condition=route_53_hosted_zone_name_exists_condition
+
         # AWS::CloudFormation::Interface
         self.template_options.metadata = {
             "OE::Patterns::TemplateVersion": template_version,
@@ -362,7 +384,8 @@ class JitsiStack(core.Stack):
                             "default": "Application Config"
                         },
                         "Parameters": [
-                            cidr_block_param.logical_id
+                            cidr_block_param.logical_id,
+                            route_53_hosted_zone_name_param.logical_id
                         ]
                     },
                     vpc.metadata_parameter_group()
@@ -370,6 +393,9 @@ class JitsiStack(core.Stack):
                 "ParameterLabels": {
                     cidr_block_param.logical_id: {
                         "default": "CIDR Block"
+                    },
+                    route_53_hosted_zone_name_param.logical_id: {
+                        "default": "AWS Route 53 Hosted Zone Name"
                     },
                     sns_notification_email_param.logical_id: {
                         "default": "Notification Email"
@@ -386,6 +412,6 @@ class JitsiStack(core.Stack):
         eip_output = core.CfnOutput(
             self,
             "EipOutput",
-            description="The Elastic IP address associated with the Jitsi EC2 instance. For DNS assignment.",
+            description="The Elastic IP address dynamically mapped to the autoscaling group instance.",
             value=eip.ref
         )
