@@ -1,4 +1,5 @@
-#!/bin/bash                                                                                                            
+#!/bin/bash
+
 # aws cloudwatch
 cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 {
@@ -122,11 +123,59 @@ systemctl start amazon-cloudwatch-agent
 # setup FQDN *before* install
 echo "127.0.0.1 ${JitsiHostname}" >> /etc/hosts
 
-# preselect install questions
+# preselect Jitsi install questions
 echo "jitsi-videobridge2 jitsi-videobridge/jvb-hostname string ${JitsiHostname}" | debconf-set-selections
 echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)" | debconf-set-selections
 
 apt-get -y install jitsi-meet
+
+# configure Jitsi behind NAT Gateway
+JVB_CONFIG=/etc/jitsi/videobridge/sip-communicator.properties
+sed -i 's/^org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES/#&/' $JVB_CONFIG
+LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+PUBLIC_IP="${JitsiPublicIP}"
+echo "org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$LOCAL_IP" >> $JVB_CONFIG
+echo "org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$PUBLIC_IP" >> $JVB_CONFIG
+
+# raise systemd limits
+sed -i 's/#DefaultLimitNOFILE=/DefaultLimitNOFILE=65000/g' /etc/systemd/system.conf
+sed -i 's/#DefaultLimitNPROC=/DefaultLimitNPROC=65000/g' /etc/systemd/system.conf
+sed -i 's/#DefaultTasksMax=/DefaultTasksMax=65000/g' /etc/systemd/system.conf
+
+systemctl daemon-reload
+systemctl restart jitsi-videobridge2
+
+#
+# associate EIP
+#
+
+# error handling
+function error_exit
+{
+    cfn-signal --exit-code 1 --stack ${AWS::StackName} --resource JitsiAsg --region ${AWS::Region}
+    exit 1
+}
+
+instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+max_attach_tries=12
+attach_tries=0
+success=1
+while [[ $success != 0 ]]; do
+    if [ $attach_tries -gt $max_attach_tries ]; then
+        error_exit
+    fi
+    sleep 10
+    echo aws ec2 associate-address --region ${AWS::Region} --instance-id $instance_id --allocation-id ${Eip.AllocationId}
+    aws ec2 associate-address --region ${AWS::Region} --instance-id $instance_id --allocation-id ${Eip.AllocationId}
+    success=$?
+    ((attach_tries++))
+done
+
+#
+# cloudformation signal
+#
+
+cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JitsiAsg --region ${AWS::Region}
 
 # generate Let's Encrypt certificate
 #   https://stackoverflow.com/questions/57904900/aws-cloudformation-template-with-letsencrypt-ssl-certificate
@@ -147,20 +196,4 @@ while true; do
         sleep 730
     fi
 done
-
-# configure behind NAT Gateway
-JVB_CONFIG=/etc/jitsi/videobridge/sip-communicator.properties
-sed -i 's/^org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES/#&/' $JVB_CONFIG
-LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
-PUBLIC_IP="${JitsiPublicIP}"
-echo "org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$LOCAL_IP" >> $JVB_CONFIG
-echo "org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$PUBLIC_IP" >> $JVB_CONFIG
-
-# raise systemd limits
-sed -i 's/#DefaultLimitNOFILE=/DefaultLimitNOFILE=65000/g' /etc/systemd/system.conf
-sed -i 's/#DefaultLimitNPROC=/DefaultLimitNPROC=65000/g' /etc/systemd/system.conf
-sed -i 's/#DefaultTasksMax=/DefaultTasksMax=65000/g' /etc/systemd/system.conf
-
-systemctl daemon-reload
-systemctl restart jitsi-videobridge2
 systemctl restart apache2
