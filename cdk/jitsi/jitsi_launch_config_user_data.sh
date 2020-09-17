@@ -146,6 +146,36 @@ systemctl daemon-reload
 systemctl restart jitsi-videobridge2
 
 #
+# customize Jitsi interface
+#
+
+INTERFACE_CONFIG=/usr/share/jitsi-meet/interface_config.js
+JITSI_IMAGE_DIR=/usr/share/jitsi-meet/images
+cp $INTERFACE_CONFIG $INTERFACE_CONFIG.default
+echo "// Ordinary Experts Jitsi Patterns config overrides" >> $INTERFACE_CONFIG
+echo "interfaceConfig.NATIVE_APP_NAME = '${JitsiInterfaceNativeAppName}';" >>  $INTERFACE_CONFIG
+echo "interfaceConfig.APP_NAME = '${JitsiInterfaceAppName}';" >> $INTERFACE_CONFIG
+echo "interfaceConfig.DEFAULT_REMOTE_DISPLAY_NAME = '${JitsiInterfaceDefaultRemoteDisplayName}';" >> $INTERFACE_CONFIG
+echo "interfaceConfig.SHOW_BRAND_WATERMARK = ${JitsiInterfaceShowBrandWatermark};" >> $INTERFACE_CONFIG
+echo "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS = ${JitsiInterfaceShowWatermarkForGuests};" >> $INTERFACE_CONFIG
+# brand watermark image
+JITSI_BRAND_WATERMARK=${JitsiInterfaceBrandWatermark}
+if [ ! -z "$JITSI_BRAND_WATERMARK" ];
+then
+    wget -O $JITSI_IMAGE_DIR/rightwatermark.png $JITSI_BRAND_WATERMARK
+fi
+echo "interfaceConfig.BRAND_WATERMARK_LINK = '${JitsiInterfaceBrandWatermarkLink}';" >> $INTERFACE_CONFIG
+# watermark image
+JITSI_WATERMARK=${JitsiInterfaceWatermark}
+if [ ! -z "$JITSI_WATERMARK" ];
+then
+    cp $JITSI_IMAGE_DIR/watermark.png $JITSI_IMAGE_DIR/watermark.default.png
+    wget -O $JITSI_IMAGE_DIR/watermark.png $JITSI_WATERMARK
+fi
+echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" >> $INTERFACE_CONFIG
+systemctl restart apache2
+
+#
 # associate EIP
 #
 

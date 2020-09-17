@@ -105,6 +105,69 @@ class JitsiStack(core.Stack):
             "JitsiHostname",
             description="Required: The DNS hostname configured to access Jitsi."
         )
+        jitsi_interface_app_name_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceAppName",
+            default="Jitsi Meet",
+            description="Optional: Customize the app name on the Jitsi interface."
+        )
+        jitsi_interface_default_remote_display_name_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceDefaultRemoteDisplayName",
+            default="Fellow Jitster",
+            description="Optional: Customize the default display name for Jitsi users."
+        )
+        jitsi_interface_native_app_name_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceNativeAppName",
+            default="Jitsi Meet",
+            description="Optional: Customize the native app name on the Jitsi interface."
+        )
+        jitsi_interface_show_brand_watermark_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceShowBrandWatermark",
+            allowed_values=[ "true", "false" ],
+            default="true",
+            description="Optional: Display the watermark logo image in the upper left corner."
+        )
+        jitsi_interface_show_watermark_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceShowWatermark",
+            allowed_values=[ "true", "false" ],
+            default="true",
+            description="Optional: Display the watermark logo image in the upper left corner."
+        )
+        jitsi_interface_show_watermark_for_guests_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceShowWatermarkForGuests",
+            allowed_values=[ "true", "false" ],
+            default="true",
+            description="Optional: Display the watermark logo image in the upper left corner for guest users. This can be set to override the general setting behavior for guest users."
+        )
+        jitsi_interface_brand_watermark_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceBrandWatermark",
+            default="",
+            description="Optional: Provide a URL to a PNG image to be used as the brand watermark logo image in the upper right corner. File should be publically available for download."
+        )
+        jitsi_interface_brand_watermark_link_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceBrandWatermarkLink",
+            default="http://jitsi.org",
+            description="Optional: Provide a link destination for the brand watermark logo image in the upper right corner."
+        )
+        jitsi_interface_watermark_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceWatermark",
+            default="",
+            description="Optional: Provide a URL to a PNG image to be used as the watermark logo image in the upper left corner. File should be publically available for download."
+        )
+        jitsi_interface_watermark_link_param = core.CfnParameter(
+            self,
+            "JitsiInterfaceWatermarkLink",
+            default="http://jitsi.org",
+            description="Optional: Provide a link destination for the Jitsi watermark logo image in the upper left corner."
+        )
         lets_encrypt_certificate_email_param = core.CfnParameter(
             self,
             "LetsEncryptCertificateEmail",
@@ -414,4 +477,10 @@ class JitsiStack(core.Stack):
             "EipOutput",
             description="The Elastic IP address dynamically mapped to the autoscaling group instance.",
             value=eip.ref
+        )
+        endpoint_output = core.CfnOutput(
+            self,
+            "JitsiUrl",
+            description="The URL for the Jitsi instance.",
+            value=core.Fn.join("", ["https://", jitsi_hostname_param.value_as_string])
         )
