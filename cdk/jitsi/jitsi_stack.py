@@ -478,3 +478,9 @@ class JitsiStack(core.Stack):
             description="The Elastic IP address dynamically mapped to the autoscaling group instance.",
             value=eip.ref
         )
+        endpoint_output = core.CfnOutput(
+            self,
+            "JitsiUrl",
+            description="The URL for the Jitsi instance.",
+            value=core.Fn.join("", ["https://", jitsi_hostname_param.value_as_string])
+        )

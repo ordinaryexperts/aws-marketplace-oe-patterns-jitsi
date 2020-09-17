@@ -69,9 +69,9 @@ deploy: build
 	--parameters JitsiInterfaceShowBrandWatermark=true \
 	--parameters JitsiInterfaceShowWatermark=true \
 	--parameters JitsiInterfaceShowWatermarkForGuests=true \
-	--parameters JitsiInterfaceBrandWatermark=https://ordinaryexperts.com/img/logo.png \
+	--parameters JitsiInterfaceBrandWatermark=https://ordinaryexperts.com/img/logos/oe-logo-white-transparent-background-900x600.png \
 	--parameters JitsiInterfaceBrandWatermarkLink=https://ordinaryexperts.com \
-	--parameters JitsiInterfaceWatermark=https://ordinaryexperts.com/img/logo.png \
+	--parameters JitsiInterfaceWatermark=https://ordinaryexperts.com/img/logos/oe-logo-white-transparent-background-900x600.png \
 	--parameters JitsiInterfaceWatermarkLink=https://ordinaryexperts.com \
 	--parameters LetsEncryptCertificateEmail=aaron@ordinaryexperts.com \
 	--parameters Route53HostedZoneName=dev.patterns.ordinaryexperts.com. \
