@@ -91,6 +91,7 @@ class JitsiStack(core.Stack):
         cidr_block_param = core.CfnParameter(
             self,
             "CidrBlock",
+            allowed_pattern="((\d{1,3})\.){3}\d{1,3}/\d{1,2}",
             default="0.0.0.0/0",
             description="Optional: A CIDR block to restrict access to the Jitsi application."
         )
