@@ -61,7 +61,7 @@ clean-snapshots-tcat-all-regions:
 deploy: build
 	docker-compose run -w /code/cdk --rm jitsi cdk deploy \
 	--require-approval never \
-	--parameters CidrBlock=0.0.0.0/0 \
+	--parameters IngressCidrBlock=0.0.0.0/0 \
 	--parameters JitsiHostname=oe-patterns-jitsi-${USER}.dev.patterns.ordinaryexperts.com \
 	--parameters JitsiInterfaceAppName="Ordinary Experts Meet" \
 	--parameters JitsiInterfaceDefaultRemoteDisplayName="Ordinary Expert" \

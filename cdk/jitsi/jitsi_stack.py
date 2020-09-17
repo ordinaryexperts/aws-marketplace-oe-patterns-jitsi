@@ -90,13 +90,14 @@ class JitsiStack(core.Stack):
 
         cidr_block_param = core.CfnParameter(
             self,
-            "CidrBlock",
+            "IngressCidrBlock",
             default="0.0.0.0/0",
-            description="Optional: A CIDR block to restrict access to the Jitsi application."
+            description="Required: A CIDR block to restrict access to the Jitsi application. Leave as 0.0.0.0/0 to allow public access from internet."
         )
         ec2_instance_type_param = core.CfnParameter(
             self,
             "InstanceType",
+            allowed_values=allowed_values["allowed_instance_types"],
             default="t3.xlarge",
             description="Required: The EC2 instance type for the application Auto Scaling Group."
         )
@@ -177,7 +178,7 @@ class JitsiStack(core.Stack):
             self,
             "Route53HostedZoneName",
             default="",
-            description="Optional: A Route 53 hosted zone name for which a DNS record should be automatically added. Should reflect the domain part of the Jitsi Hostname parameter."
+            description="Optional: A Route53 hosted zone name for which a DNS record will be created by this template. Should reflect the domain part of the Jitsi Hostname parameter."
         )
         sns_notification_email_param = core.CfnParameter(
             self,
@@ -425,7 +426,7 @@ class JitsiStack(core.Stack):
             to_port=10000
         )
 
-        # route 53
+        # route53
         record_set = aws_route53.CfnRecordSet(
             self,
             "RecordSet",
@@ -444,21 +445,81 @@ class JitsiStack(core.Stack):
                 "ParameterGroups": [
                     {
                         "Label": {
-                            "default": "Application Config"
+                            "default": "Infrastructure Config"
                         },
                         "Parameters": [
                             cidr_block_param.logical_id,
-                            route_53_hosted_zone_name_param.logical_id
+                            ec2_instance_type_param.logical_id,
+                            lets_encrypt_certificate_email_param.logical_id,
+                            route_53_hosted_zone_name_param.logical_id,
+                            sns_notification_email_param.logical_id
+                        ]
+                    },
+                    {
+                        "Label": {
+                            "default": "Jitsi Config"
+                        },
+                        "Parameters": [
+                            jitsi_hostname_param.logical_id,
+                            jitsi_interface_app_name_param.logical_id,
+                            jitsi_interface_default_remote_display_name_param.logical_id,
+                            jitsi_interface_native_app_name_param.logical_id,
+                            jitsi_interface_show_brand_watermark_param.logical_id,
+                            jitsi_interface_show_watermark_param.logical_id,
+                            jitsi_interface_show_watermark_for_guests_param.logical_id,
+                            jitsi_interface_brand_watermark_param.logical_id,
+                            jitsi_interface_brand_watermark_link_param.logical_id,
+                            jitsi_interface_watermark_param.logical_id,
+                            jitsi_interface_watermark_link_param.logical_id,
                         ]
                     },
                     vpc.metadata_parameter_group()
                 ],
                 "ParameterLabels": {
                     cidr_block_param.logical_id: {
-                        "default": "CIDR Block"
+                        "default": "Ingress CIDR Block"
+                    },
+                    ec2_instance_type_param.logical_id: {
+                        "default": "EC2 instance type"
+                    },
+                    jitsi_hostname_param.logical_id: {
+                        "default": "Jitsi Hostname"
+                    },
+                    jitsi_interface_app_name_param.logical_id: {
+                        "default": "Jitsi Interface App Name"
+                    },
+                    jitsi_interface_default_remote_display_name_param.logical_id: {
+                        "default": "Jitsi Interface Default Remote Display Name"
+                    },
+                    jitsi_interface_native_app_name_param.logical_id: {
+                        "default": "Jitsi Interface Native App Name"
+                    },
+                    jitsi_interface_show_brand_watermark_param.logical_id: {
+                        "default": "Jitsi Interface Show Brand Watermark"
+                    },
+                    jitsi_interface_show_watermark_param.logical_id: {
+                        "default": "Jitsi Interface Show Watermark"
+                    },
+                    jitsi_interface_show_watermark_for_guests_param.logical_id: {
+                        "default": "Jitsi Interface Show Watermark For Guests"
+                    },
+                    jitsi_interface_brand_watermark_param.logical_id: {
+                        "default": "Jitsi Interface Brand Watermark"
+                    },
+                    jitsi_interface_brand_watermark_link_param.logical_id: {
+                        "default": "Jitsi Interface Brand Watermark Link"
+                    },
+                    jitsi_interface_watermark_param.logical_id: {
+                        "default": "Jitsi Interface Watermark"
+                    },
+                    jitsi_interface_watermark_link_param.logical_id: {
+                        "default": "Jitsi Interface Watermark Link"
+                    },
+                    lets_encrypt_certificate_email_param.logical_id: {
+                        "default": "Let's Encrypt Certificate Email"
                     },
                     route_53_hosted_zone_name_param.logical_id: {
-                        "default": "AWS Route 53 Hosted Zone Name"
+                        "default": "AWS Route53 Hosted Zone Name"
                     },
                     sns_notification_email_param.logical_id: {
                         "default": "Notification Email"
