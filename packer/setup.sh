@@ -55,7 +55,7 @@ apt-get -y install --download-only jitsi-meet
 mkdir /root/jitsi-debs
 mv /var/cache/apt/archives/*.deb /root/jitsi-debs
 
-# # not configuring firewall with ufw in favor of AWS security groups
+# not configuring firewall with ufw in favor of AWS security groups
 
 #
 # AMI hardening
