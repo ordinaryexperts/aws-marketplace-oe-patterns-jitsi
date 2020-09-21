@@ -47,9 +47,13 @@ cd -
 apt-get -y install apache2 debconf-utils gnupg2
 apt install apt-transport-https
 
-curl https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
-echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | sudo tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
-apt update
+curl https://download.jitsi.org/jitsi-key.gpg.key | gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg
+echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
+apt-get update
+rm -rf /var/cache/apt/archives/*.deb
+apt-get -y install --download-only jitsi-meet
+mkdir /root/jitsi-debs
+mv /var/cache/apt/archives/*.deb /root/jitsi-debs
 
 # not configuring firewall with ufw in favor of AWS security groups
 

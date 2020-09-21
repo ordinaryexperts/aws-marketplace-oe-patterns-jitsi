@@ -10,7 +10,7 @@ The Ordinary Experts Jitsi Pattern is an open-source AWS CloudFormation template
 
 * Ubuntu 18.04.4 LTS
 * Apache 2.4.29
-* Jitsi version from Ubuntu APT repository at the time of stack deployment
+* Jitsi version 2.0.4966-1
 
 The AWS stack uses Amazon Elastic Compute Cloud (Amazon EC2), Amazon Virtual Public Cloud (Amazon VPC), Amazon CloudWatch and Amazon Route53.
 
