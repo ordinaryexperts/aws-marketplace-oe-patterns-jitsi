@@ -61,10 +61,20 @@ clean-snapshots-tcat-all-regions:
 deploy: build
 	docker-compose run -w /code/cdk --rm jitsi cdk deploy \
 	--require-approval never \
-	--parameters CidrBlock=0.0.0.0/0 \
+	--parameters IngressCidrBlock=0.0.0.0/0 \
 	--parameters JitsiHostname=oe-patterns-jitsi-${USER}.dev.patterns.ordinaryexperts.com \
-	--parameters Route53HostedZoneName=dev.patterns.ordinaryexperts.com. \
+	--parameters JitsiInterfaceAppName="Ordinary Experts Meet" \
+	--parameters JitsiInterfaceDefaultRemoteDisplayName="Ordinary Expert" \
+	--parameters JitsiInterfaceNativeAppName="Ordinary Experts Meet (native)" \
+	--parameters JitsiInterfaceShowBrandWatermark=true \
+	--parameters JitsiInterfaceShowWatermark=true \
+	--parameters JitsiInterfaceShowWatermarkForGuests=true \
+	--parameters JitsiInterfaceBrandWatermark=https://ordinaryexperts.com/img/logos/oe-logo-white-transparent-background-900x600.png \
+	--parameters JitsiInterfaceBrandWatermarkLink=https://ordinaryexperts.com \
+	--parameters JitsiInterfaceWatermark=https://ordinaryexperts.com/img/logos/oe-logo-white-transparent-background-900x600.png \
+	--parameters JitsiInterfaceWatermarkLink=https://ordinaryexperts.com \
 	--parameters LetsEncryptCertificateEmail=aaron@ordinaryexperts.com \
+	--parameters Route53HostedZoneName=dev.patterns.ordinaryexperts.com. \
 	--parameters VpcId=vpc-00425deda4c835455 \
 	--parameters VpcPrivateSubnetId1=subnet-030c94b9795c6cb96 \
 	--parameters VpcPrivateSubnetId2=subnet-079290412ce63c4d5 \
