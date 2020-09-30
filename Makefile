@@ -124,3 +124,6 @@ test-main:
 	&& cdk synth > ../test/main-test/template.yaml \
 	&& cd ../test/main-test \
 	&& taskcat test run"
+
+list-all-stacks: build
+	docker-compose run -w /code --rm jitsi bash ./scripts/list-all-stacks.sh

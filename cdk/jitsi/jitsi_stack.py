@@ -132,13 +132,6 @@ class JitsiStack(core.Stack):
             default="true",
             description="Optional: Display the watermark logo image in the upper left corner."
         )
-        jitsi_interface_show_watermark_param = core.CfnParameter(
-            self,
-            "JitsiInterfaceShowWatermark",
-            allowed_values=[ "true", "false" ],
-            default="true",
-            description="Optional: Display the watermark logo image in the upper left corner."
-        )
         jitsi_interface_show_watermark_for_guests_param = core.CfnParameter(
             self,
             "JitsiInterfaceShowWatermarkForGuests",
@@ -434,9 +427,10 @@ class JitsiStack(core.Stack):
             hosted_zone_name=route_53_hosted_zone_name_param.value_as_string,
             name=jitsi_hostname_param.value_as_string,
             resource_records=[ eip.ref ],
-            ttl="60",
             type="A"
         )
+        # https://github.com/aws/aws-cdk/issues/8431
+        record_set.add_property_override("TTL", 60)
         record_set.cfn_options.condition=route_53_hosted_zone_name_exists_condition
 
         # AWS::CloudFormation::Interface
@@ -466,7 +460,6 @@ class JitsiStack(core.Stack):
                             jitsi_interface_default_remote_display_name_param.logical_id,
                             jitsi_interface_native_app_name_param.logical_id,
                             jitsi_interface_show_brand_watermark_param.logical_id,
-                            jitsi_interface_show_watermark_param.logical_id,
                             jitsi_interface_show_watermark_for_guests_param.logical_id,
                             jitsi_interface_brand_watermark_param.logical_id,
                             jitsi_interface_brand_watermark_link_param.logical_id,
@@ -496,19 +489,16 @@ class JitsiStack(core.Stack):
                         "default": "Jitsi Interface Native App Name"
                     },
                     jitsi_interface_show_brand_watermark_param.logical_id: {
-                        "default": "Jitsi Interface Show Brand Watermark"
-                    },
-                    jitsi_interface_show_watermark_param.logical_id: {
                         "default": "Jitsi Interface Show Watermark"
                     },
                     jitsi_interface_show_watermark_for_guests_param.logical_id: {
                         "default": "Jitsi Interface Show Watermark For Guests"
                     },
                     jitsi_interface_brand_watermark_param.logical_id: {
-                        "default": "Jitsi Interface Brand Watermark"
+                        "default": "Jitsi Interface Watermark"
                     },
                     jitsi_interface_brand_watermark_link_param.logical_id: {
-                        "default": "Jitsi Interface Brand Watermark Link"
+                        "default": "Jitsi Interface Watermark Link"
                     },
                     jitsi_interface_watermark_param.logical_id: {
                         "default": "Jitsi Interface Watermark"
