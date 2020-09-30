@@ -12,13 +12,13 @@ The Ordinary Experts Jitsi Pattern is an open-source AWS CloudFormation template
 * Apache 2.4.29
 * Jitsi version 2.0.4966-1
 
-The AWS stack uses Amazon Elastic Compute Cloud (Amazon EC2), Amazon Virtual Public Cloud (Amazon VPC), Amazon CloudWatch and Amazon Route53.
+The AWS stack uses Amazon Elastic Compute Cloud (Amazon EC2), Amazon Virtual Public Cloud (Amazon VPC), Amazon CloudWatch and Amazon Route 53.
 
 While our solution manages its EC2 instance via an AWS AutoScaling Group to take advantage of the support for multiple availability zone configuration, it DOES NOT support load balancing or automatically scaling Jitsi application servers. Such a setup requires a custom load balancing setup and may be included in a future release of this product.
 
 The template places a single EC2 instance in a public subnet of the VPC and secures port access to 80, 443, 4443 and 1000 via an EC2 Security Group. Users can optionally have the template create a brand new VPC, or specify an existing VPC ID in their AWS account into which to deploy, including subnet identification parameters. Users are also able to lock down public access of the service to an ingress CIDR Block, in case they want to restrict access to a range of IP addresses (such as corporate VPN IPs).
 
-Optionally, users can provide an AWS Route53 Hosted Zone Name and the stack will automatically manage a DNS record for the provided hostname parameter. This is the recommended setup. The AWS CloudFormation stack provides and EC2 Elastic IP address as an output, whose IP address should be pointed to by the DNS record input as the 'Jitsi Hostname' parameter.
+Optionally, users can provide an AWS Route 53 Hosted Zone Name and the stack will automatically manage a DNS record for the provided hostname parameter. This is the recommended setup. The AWS CloudFormation stack provides and EC2 Elastic IP address as an output, whose IP address should be pointed to by the DNS record input as the 'Jitsi Hostname' parameter.
 
 **IMPORTANT**: As part of the Jitsi installation process, a [LetsEncrypt](https://letsencrypt.org/) certificate is generated, and the install process will try to validate the certificate programmatically every 12 minutes until it is successful. The installation will not be complete until DNS is pointing to the hostname supplied by parameter, and a certificate request has been successfully made.
 
