@@ -29,7 +29,7 @@ setuptools.setup(
         f"aws-cdk.aws-route53=={CDK_VERSION}",
         f"aws-cdk.aws-sns=={CDK_VERSION}",
         f"aws-cdk.core=={CDK_VERSION}",
-        f"oe-patterns-cdk-common@git+https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-cdk-common@develop"
+        f"oe-patterns-cdk-common@git+https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-cdk-common@1.3.0"
     ],
 
     python_requires=">=3.6",
