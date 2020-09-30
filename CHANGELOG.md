@@ -1,5 +1,7 @@
 # Unreleased
 
+1.0.0
+-----
 * Adding taskcat tests
 * Run taskcat via GitHub Actions
 * Linting fixes
