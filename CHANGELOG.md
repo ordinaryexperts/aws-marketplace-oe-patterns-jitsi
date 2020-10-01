@@ -1,5 +1,9 @@
 # Unreleased
 
+1.0.1
+-----
+* Tweak to Route 53 parameter and documentation
+
 1.0.0
 -----
 * Adding taskcat tests
