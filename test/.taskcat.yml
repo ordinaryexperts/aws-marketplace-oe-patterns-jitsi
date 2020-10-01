@@ -11,109 +11,109 @@ tests:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-us-east-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
   allResourcesUsEast2:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-us-east-2.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - us-east-2
   allResourcesUsWest1:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-us-west-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - us-west-1
   allResourcesUsWest2:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-us-west-2.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - us-west-2
   allResourcesCaCentral1:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-ca-central-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - ca-central-1
   allResourcesEuCentral1:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-eu-central-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - eu-central-1
   allResourcesEuNorth1:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-eu-north-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - eu-north-1
   allResourcesEuWest1:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-eu-west-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - eu-west-1
   allResourcesEuWest2:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-eu-west-2.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - eu-west-2
   allResourcesEuWest3:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-eu-west-3.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - eu-west-3
   allResourcesApNorthEast1:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-ap-northeast-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - ap-northeast-1
   allResourcesApSouth1:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-ap-south-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - ap-south-1
   allResourcesApSouthEast1:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-ap-southeast-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - ap-southeast-1
   allResourcesApSouthEast2:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-ap-southeast-2.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - ap-southeast-2
   allResourcesApNortheast2:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-ap-northeast-2.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - ap-northeast-2
   allResourcesSaEast1:
     parameters:
       JitsiHostname: oe-patterns-jitsi-taskcat-sa-east-1.dev.patterns.ordinaryexperts.com
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
     regions:
       - sa-east-1

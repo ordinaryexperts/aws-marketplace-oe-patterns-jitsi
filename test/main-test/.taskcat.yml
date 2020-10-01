@@ -8,9 +8,9 @@ project:
 tests:
   allResources:
     parameters:
-      JitsiHostname: oe-patterns-jitsi-taskcat.dev.patterns.ordinaryexperts.com
+      JitsiHostname: "oe-patterns-jitsi-taskcat-$[taskcat_random-string].dev.patterns.ordinaryexperts.com"
       LetsEncryptCertificateEmail: contact+patterns@ordinaryexperts.com
-      Route53HostedZoneName: dev.patterns.ordinaryexperts.com.
+      Route53HostedZoneName: dev.patterns.ordinaryexperts.com
       VpcId: vpc-00425deda4c835455
       VpcPrivateSubnetId1: subnet-030c94b9795c6cb96
       VpcPrivateSubnetId2: subnet-079290412ce63c4d5
