@@ -32,26 +32,6 @@ allowed_values = yaml.load(
 allowed_instance_types = allowed_values["allowed_instance_types"]
 allowed_regions = allowed_values["allowed_regions"]
 
-# list copied from scripts/copy-image.sh
-# TODO: move to YAML
-
-allowed_regions = [
-    "us-east-2",
-    "us-west-1",
-    "us-west-2",
-    "ca-central-1",
-    "eu-central-1",
-    "eu-north-1",
-    "eu-west-1",
-    "eu-west-2",
-    "eu-west-3",
-    "ap-northeast-1",
-    "ap-northeast-2",
-    "ap-south-1",
-    "ap-southeast-1",
-    "ap-southeast-2",
-    "sa-east-1"
-]
 # plus our default region
 allowed_regions.append(DEFAULT_REGION)
 
@@ -98,6 +78,8 @@ for header in column_headers:
             else:
                 annual_price = hourly_price_with_markup * HOURS_IN_A_YEAR * ANNUAL_SAVINGS_PERCENTAGE
                 plf_values[header] = str(round(annual_price, 2))
+        else:
+            print(f"Instance Type '{instance_type}' not allowed!")
     if not availability_match and not price_match:
         if header in plf_config:
             plf_values[header] = plf_config[header]
