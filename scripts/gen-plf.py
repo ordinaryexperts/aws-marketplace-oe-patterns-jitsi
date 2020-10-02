@@ -24,13 +24,17 @@ plf_config = yaml.load(
 )
 plf_values = {}
 
-allowed_instance_types = yaml.load(
-    open("/code/cdk/jitsi/allowed_instance_types.yaml"),
+allowed_values = yaml.load(
+    open("/code/cdk/jitsi/allowed_values.yaml"),
     Loader=yaml.SafeLoader
-)["allowed_instance_types"]
+)
+
+allowed_instance_types = allowed_values["allowed_instance_types"]
+allowed_regions = allowed_values["allowed_regions"]
 
 # list copied from scripts/copy-image.sh
 # TODO: move to YAML
+
 allowed_regions = [
     "us-east-2",
     "us-west-1",

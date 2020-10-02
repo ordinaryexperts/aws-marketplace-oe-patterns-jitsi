@@ -154,7 +154,7 @@ This template allows customization of the Jitsi Meet interface and allows Jitsi 
 "Clusters and AWS Resources Topology 1: AWS Calculator Link": "https://calculator.aws/#/estimate?id=1459d4bc50bcac9f37ced765f049b2b273885c76"
 "Clusters and AWS Resources Topology 1: Short Description": "Ordinary Experts Jitsi Pattern AWS Architecture Diagram"
 "Clusters and AWS Resources Topology 1: Long Description": "The Ordinary Experts Jitsi Patterns AWS Architecture Diagram shows the total flow of services from when the developer updates the project code to when the customer accesses the Jitsi Meet application. The diagram shows the following AWS Services: Amazon Elastic Compute Cloud (Amazon EC2), Amazon Virtual Public Cloud (Amazon VPC), and Amazon CloudWatch Logs."
-"Clusters and AWS Resources Topology 1: CloudFormation Template URL": "https://ordinary-experts-aws-marketplace-jitsi-pattern-artifacts.s3.amazonaws.com/templates/{{version}}/oe-jitsi-patterns-template.yaml"
+"Clusters and AWS Resources Topology 1: CloudFormation Template URL": "https://ordinary-experts-aws-marketplace-drupal-pattern-artifacts.s3.amazonaws.com/jitsi/1.0.1/template.yaml"
 "Clusters and AWS Resources Topology 1: Architecture Diagram URL": "https://ordinaryexperts.com/img/services/oe_jitsi_patterns_topology_diagram.png"
 "Clusters and AWS Resources Topology 2: Title": ""
 "Clusters and AWS Resources Topology 2: AWS Calculator Link": ""
