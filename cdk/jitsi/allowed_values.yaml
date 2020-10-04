@@ -10,6 +10,7 @@ allowed_instance_types:
   - c5.metal
   - c5.xlarge
   - c5d.18xlarge
+  - c5d.12xlarge
   - c5d.2xlarge
   - c5d.4xlarge
   - c5d.9xlarge
