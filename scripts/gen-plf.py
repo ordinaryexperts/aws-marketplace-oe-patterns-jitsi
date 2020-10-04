@@ -5,14 +5,21 @@
 
 import awspricing
 import csv
+import pystache
 import re
+import sys
 import yaml
+
+if len(sys.argv) != 3:
+    raise Exception("Usage: python3 gen-plf.py [AMI_ID] [TEMPLATE_VERSION]")
 
 OE_MARKUP_PERCENTAGE = 0.05
 ANNUAL_SAVINGS_PERCENTAGE = 0.80 # 20% off
-MINIMUM_RATE = 0.001
+MINIMUM_RATE = 0.01
 HOURS_IN_A_YEAR = 8760
 DEFAULT_REGION = "us-east-1"
+AMI=sys.argv[1]
+VERSION=sys.argv[2]
 
 # to generate the 'gen-plf-column-headers.txt', open the Excel Product Load Form,
 # select header row, copy & paste into txt file, replacing all contents.
@@ -72,7 +79,7 @@ for header in column_headers:
             hourly_price_with_markup = price * OE_MARKUP_PERCENTAGE
             if price_type == "Hourly":
                 if hourly_price_with_markup > MINIMUM_RATE:
-                    plf_values[header] = str(round(hourly_price_with_markup, 3))
+                    plf_values[header] = str(round(hourly_price_with_markup, 2))
                 else:
                     plf_values[header] = MINIMUM_RATE
             else:
@@ -82,13 +89,13 @@ for header in column_headers:
             print(f"Instance Type '{instance_type}' not allowed!")
     if not availability_match and not price_match:
         if header in plf_config:
-            plf_values[header] = plf_config[header]
+            plf_values[header] = pystache.render(plf_config[header], {'ami': AMI, 'version': VERSION})
         else:
             plf_values[header] = ""
 
-with open('/code/pfl.csv', 'w', newline='') as csvfile:
+with open('/code/plf.csv', 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=column_headers)
     writer.writeheader()
     writer.writerow(plf_values)
 
-print("PLF row saved to 'pfl.csv'")
+print("PLF row saved to 'plf.csv'")
