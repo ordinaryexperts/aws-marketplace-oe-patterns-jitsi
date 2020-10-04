@@ -94,7 +94,7 @@ lint: build
 	docker-compose run -w /code --rm jitsi bash ./scripts/lint.sh
 
 publish: build
-	docker-compose run -w /code --rm drupal bash ./scripts/publish-template.sh $(TEMPLATE_VERSION)
+	docker-compose run -w /code --rm jitsi bash ./scripts/publish-template.sh $(TEMPLATE_VERSION)
 
 rebuild:
 	docker-compose build --no-cache jitsi
