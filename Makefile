@@ -8,7 +8,7 @@ ami-docker-rebuild:
 	docker-compose build --no-cache ami
 
 ami-ec2-build:
-	docker-compose run -w /code --rm jitsi bash ./scripts/packer.sh
+	docker-compose run -w /code --rm jitsi bash ./scripts/packer.sh $(TEMPLATE_VERSION)
 
 ami-ec2-copy:
 	docker-compose run -w /code --rm jitsi bash ./scripts/copy-image.sh $(AMI_ID)
