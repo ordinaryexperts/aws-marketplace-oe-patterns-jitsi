@@ -5,14 +5,21 @@
 
 import awspricing
 import csv
+import pystache
 import re
+import sys
 import yaml
+
+if len(sys.argv) != 3:
+    raise Exception("Usage: python3 gen-plf.py [AMI_ID] [TEMPLATE_VERSION]")
 
 OE_MARKUP_PERCENTAGE = 0.05
 ANNUAL_SAVINGS_PERCENTAGE = 0.80 # 20% off
-MINIMUM_RATE = 0.001
+MINIMUM_RATE = 0.01
 HOURS_IN_A_YEAR = 8760
 DEFAULT_REGION = "us-east-1"
+AMI=sys.argv[1]
+VERSION=sys.argv[2]
 
 # to generate the 'gen-plf-column-headers.txt', open the Excel Product Load Form,
 # select header row, copy & paste into txt file, replacing all contents.
@@ -24,30 +31,14 @@ plf_config = yaml.load(
 )
 plf_values = {}
 
-allowed_instance_types = yaml.load(
-    open("/code/cdk/jitsi/allowed_instance_types.yaml"),
+allowed_values = yaml.load(
+    open("/code/cdk/jitsi/allowed_values.yaml"),
     Loader=yaml.SafeLoader
-)["allowed_instance_types"]
+)
 
-# list copied from scripts/copy-image.sh
-# TODO: move to YAML
-allowed_regions = [
-    "us-east-2",
-    "us-west-1",
-    "us-west-2",
-    "ca-central-1",
-    "eu-central-1",
-    "eu-north-1",
-    "eu-west-1",
-    "eu-west-2",
-    "eu-west-3",
-    "ap-northeast-1",
-    "ap-northeast-2",
-    "ap-south-1",
-    "ap-southeast-1",
-    "ap-southeast-2",
-    "sa-east-1"
-]
+allowed_instance_types = allowed_values["allowed_instance_types"]
+allowed_regions = allowed_values["allowed_regions"]
+
 # plus our default region
 allowed_regions.append(DEFAULT_REGION)
 
@@ -88,21 +79,23 @@ for header in column_headers:
             hourly_price_with_markup = price * OE_MARKUP_PERCENTAGE
             if price_type == "Hourly":
                 if hourly_price_with_markup > MINIMUM_RATE:
-                    plf_values[header] = str(round(hourly_price_with_markup, 3))
+                    plf_values[header] = str(round(hourly_price_with_markup, 2))
                 else:
                     plf_values[header] = MINIMUM_RATE
             else:
                 annual_price = hourly_price_with_markup * HOURS_IN_A_YEAR * ANNUAL_SAVINGS_PERCENTAGE
                 plf_values[header] = str(round(annual_price, 2))
+        else:
+            print(f"Instance Type '{instance_type}' not allowed!")
     if not availability_match and not price_match:
         if header in plf_config:
-            plf_values[header] = plf_config[header]
+            plf_values[header] = pystache.render(plf_config[header], {'ami': AMI, 'version': VERSION})
         else:
             plf_values[header] = ""
 
-with open('/code/pfl.csv', 'w', newline='') as csvfile:
+with open('/code/plf.csv', 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=column_headers)
     writer.writeheader()
     writer.writerow(plf_values)
 
-print("PLF row saved to 'pfl.csv'")
+print("PLF row saved to 'plf.csv'")

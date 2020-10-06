@@ -8,7 +8,7 @@ ami-docker-rebuild:
 	docker-compose build --no-cache ami
 
 ami-ec2-build:
-	docker-compose run -w /code --rm jitsi bash ./scripts/packer.sh
+	docker-compose run -w /code --rm jitsi bash ./scripts/packer.sh $(TEMPLATE_VERSION)
 
 ami-ec2-copy:
 	docker-compose run -w /code --rm jitsi bash ./scripts/copy-image.sh $(AMI_ID)
@@ -87,14 +87,14 @@ destroy: build
 diff:
 	docker-compose run -w /code/cdk --rm jitsi cdk diff
 
-gen-plf:
-	docker-compose run -w /code --rm jitsi python3 ./scripts/gen-plf.py
+gen-plf: build
+	docker-compose run -w /code --rm jitsi python3 ./scripts/gen-plf.py $(AMI_ID) $(TEMPLATE_VERSION)
 
 lint: build
 	docker-compose run -w /code --rm jitsi bash ./scripts/lint.sh
 
-publish:
-	docker-compose run -w /code --rm jitsi bash ./scripts/publish-template.sh
+publish: build
+	docker-compose run -w /code --rm jitsi bash ./scripts/publish-template.sh $(TEMPLATE_VERSION)
 
 rebuild:
 	docker-compose build --no-cache jitsi
