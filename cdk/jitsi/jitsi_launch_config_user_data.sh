@@ -207,12 +207,6 @@ while [[ $success != 0 ]]; do
     ((attach_tries++))
 done
 
-#
-# cloudformation signal
-#
-
-cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JitsiAsg --region ${AWS::Region}
-
 # generate Let's Encrypt certificate
 #   https://stackoverflow.com/questions/57904900/aws-cloudformation-template-with-letsencrypt-ssl-certificate
 LETSENCRYPTEMAIL="${LetsEncryptCertificateEmail}"
@@ -231,9 +225,15 @@ while true; do
         break
     else
         echo "Retry..."
-
         # https://letsencrypt.org/docs/rate-limits/
-        sleep 730
+        sleep 30
     fi
 done
 systemctl restart apache2
+success=$?
+
+#
+# cloudformation signal
+#
+
+cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JitsiAsg --region ${AWS::Region}
