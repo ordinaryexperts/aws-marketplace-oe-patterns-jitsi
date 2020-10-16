@@ -103,7 +103,7 @@ class JitsiStack(core.Stack):
         jitsi_hostname_param = core.CfnParameter(
             self,
             "JitsiHostname",
-            description="Required: The DNS hostname configured to access Jitsi."
+            description="Required: The hostname to access Jitsi. E.G. 'jitsi.internal.mycompany.com'"
         )
         jitsi_interface_app_name_param = core.CfnParameter(
             self,
@@ -161,37 +161,26 @@ class JitsiStack(core.Stack):
             default="http://jitsi.org",
             description="Optional: Provide a link destination for the Jitsi watermark logo image in the upper left corner."
         )
-        lets_encrypt_certificate_email_param = core.CfnParameter(
-            self,
-            "LetsEncryptCertificateEmail",
-            description="Required: The email address to use for Let's Encrypt certificate validation."
-        )
         route_53_hosted_zone_name_param = core.CfnParameter(
             self,
             "Route53HostedZoneName",
-            default="",
-            description="Optional: A Route 53 hosted zone name for which a DNS record will be created by this template. Should reflect the domain part of the Jitsi Hostname parameter, without trailing dot."
+            description="Required: Route 53 Hosted Zone name in which a DNS record will be created by this template. Must already exist and be the domain part of the Jitsi Hostname parameter, without trailing dot. E.G. 'internal.mycompany.com'"
         )
-        sns_notification_email_param = core.CfnParameter(
+        notification_email_param = core.CfnParameter(
             self,
             "NotificationEmail",
             default="",
-            description="Optional: Specify an email address to get emails about deploys and other system events."
+            description="Optional: Specify an email address to get emails about deploys, Let's Encrypt, and other system events."
         )
 
         #
         # CONDITIONS
         #
 
-        sns_notification_email_exists_condition = core.CfnCondition(
+        notification_email_exists_condition = core.CfnCondition(
             self,
             "NotificationEmailExistsCondition",
-            expression=core.Fn.condition_not(core.Fn.condition_equals(sns_notification_email_param.value, ""))
-        )
-        route_53_hosted_zone_name_exists_condition = core.CfnCondition(
-            self,
-            "HostedZoneNameExistsCondition",
-            expression=core.Fn.condition_not(core.Fn.condition_equals(route_53_hosted_zone_name_param.value, ""))
+            expression=core.Fn.condition_not(core.Fn.condition_equals(notification_email_param.value, ""))
         )
 
         #
@@ -215,10 +204,10 @@ class JitsiStack(core.Stack):
             "NotificationSubscription",
             protocol="email",
             topic_arn=sns_notification_topic.ref,
-            endpoint=sns_notification_email_param.value_as_string
+            endpoint=notification_email_param.value_as_string
         )
-        sns_notification_subscription.cfn_options.condition = sns_notification_email_exists_condition
-        iam_notification_publish_policy =aws_iam.PolicyDocument(
+        sns_notification_subscription.cfn_options.condition = notification_email_exists_condition
+        iam_notification_publish_policy = aws_iam.PolicyDocument(
             statements=[
                 aws_iam.PolicyStatement(
                     effect=aws_iam.Effect.ALLOW,
@@ -348,7 +337,7 @@ class JitsiStack(core.Stack):
                         {
                             "JitsiHostname": jitsi_hostname_param.value_as_string,
                             "JitsiPublicIP": eip.ref,
-                            "LetsEncryptCertificateEmail": lets_encrypt_certificate_email_param.value_as_string
+                            "LetsEncryptCertificateEmail": notification_email_param.value_as_string
                         }
                     )
                 )
@@ -429,7 +418,6 @@ class JitsiStack(core.Stack):
         )
         # https://github.com/aws/aws-cdk/issues/8431
         record_set.add_property_override("TTL", 60)
-        record_set.cfn_options.condition=route_53_hosted_zone_name_exists_condition
 
         # AWS::CloudFormation::Interface
         self.template_options.metadata = {
@@ -441,11 +429,11 @@ class JitsiStack(core.Stack):
                             "default": "Infrastructure Config"
                         },
                         "Parameters": [
+                            jitsi_hostname_param.logical_id,
+                            route_53_hosted_zone_name_param.logical_id,
                             cidr_block_param.logical_id,
                             ec2_instance_type_param.logical_id,
-                            lets_encrypt_certificate_email_param.logical_id,
-                            route_53_hosted_zone_name_param.logical_id,
-                            sns_notification_email_param.logical_id
+                            notification_email_param.logical_id
                         ]
                     },
                     {
@@ -453,7 +441,6 @@ class JitsiStack(core.Stack):
                             "default": "Jitsi Config"
                         },
                         "Parameters": [
-                            jitsi_hostname_param.logical_id,
                             jitsi_interface_app_name_param.logical_id,
                             jitsi_interface_default_remote_display_name_param.logical_id,
                             jitsi_interface_native_app_name_param.logical_id,
@@ -504,14 +491,11 @@ class JitsiStack(core.Stack):
                     jitsi_interface_watermark_link_param.logical_id: {
                         "default": "Jitsi Interface Watermark Link"
                     },
-                    lets_encrypt_certificate_email_param.logical_id: {
-                        "default": "Let's Encrypt Certificate Email"
+                    notification_email_param.logical_id: {
+                        "default": "Notification Email"
                     },
                     route_53_hosted_zone_name_param.logical_id: {
                         "default": "AWS Route 53 Hosted Zone Name"
-                    },
-                    sns_notification_email_param.logical_id: {
-                        "default": "Notification Email"
                     },
                     **vpc.metadata_parameter_labels()
                 }
