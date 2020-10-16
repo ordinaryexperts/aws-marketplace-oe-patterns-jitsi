@@ -215,11 +215,15 @@ cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JitsiAsg --
 
 # generate Let's Encrypt certificate
 #   https://stackoverflow.com/questions/57904900/aws-cloudformation-template-with-letsencrypt-ssl-certificate
-# TODO:
-#   1. move to instance metadata script
-#   2. configure system email to user announcing that DNS is waiting
+LETSENCRYPTEMAIL="${LetsEncryptCertificateEmail}"
+if [ -z "$LETSENCRYPTEMAIL" ]; then
+    # no Let's Encrypt email - modify the install script not to use it
+    sed -i 's/--agree-tos --email $EMAIL/--agree-tos --register-unsafely-without-email/g' /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+    LETSENCRYPTEMAIL="dummy@example.com"
+fi
+
 while true; do
-    printf "${LetsEncryptCertificateEmail}\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+    printf "$LETSENCRYPTEMAIL\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
 
     if [ $? -eq 0 ]
     then
