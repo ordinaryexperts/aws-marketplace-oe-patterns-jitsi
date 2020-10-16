@@ -182,11 +182,6 @@ class JitsiStack(core.Stack):
             "NotificationEmailExistsCondition",
             expression=core.Fn.condition_not(core.Fn.condition_equals(notification_email_param.value, ""))
         )
-        route_53_hosted_zone_name_exists_condition = core.CfnCondition(
-            self,
-            "HostedZoneNameExistsCondition",
-            expression=core.Fn.condition_not(core.Fn.condition_equals(route_53_hosted_zone_name_param.value, ""))
-        )
 
         #
         # RESOURCES
@@ -423,7 +418,6 @@ class JitsiStack(core.Stack):
         )
         # https://github.com/aws/aws-cdk/issues/8431
         record_set.add_property_override("TTL", 60)
-        record_set.cfn_options.condition=route_53_hosted_zone_name_exists_condition
 
         # AWS::CloudFormation::Interface
         self.template_options.metadata = {
