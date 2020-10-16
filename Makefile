@@ -73,7 +73,6 @@ deploy: build
 	--parameters JitsiInterfaceBrandWatermarkLink=https://ordinaryexperts.com \
 	--parameters JitsiInterfaceWatermark=https://ordinaryexperts.com/img/logos/oe-logo-white-transparent-background-900x600.png \
 	--parameters JitsiInterfaceWatermarkLink=https://ordinaryexperts.com \
-	--parameters LetsEncryptCertificateEmail=aaron@ordinaryexperts.com \
 	--parameters Route53HostedZoneName=dev.patterns.ordinaryexperts.com \
 	--parameters VpcId=vpc-00425deda4c835455 \
 	--parameters VpcPrivateSubnetId1=subnet-030c94b9795c6cb96 \

@@ -1,5 +1,9 @@
 # Unreleased
 
+1.0.2
+-----
+* Remove Let's Encrypt email param
+
 1.0.1
 -----
 * Tweak to Route 53 parameter and documentation
