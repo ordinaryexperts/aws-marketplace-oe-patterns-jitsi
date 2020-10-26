@@ -313,6 +313,7 @@ class JitsiStack(core.Stack):
         eip = aws_ec2.CfnEIP(
             self,
             "Eip",
+            domain="vpc"
         )
         core.Tag.add(eip, "Name", "{}/Eip".format(core.Aws.STACK_NAME))
 

@@ -1,5 +1,9 @@
 # Unreleased
 
+1.0.3
+-----
+* Adding vpc domain for EIP
+
 1.0.2
 -----
 * Remove Let's Encrypt email param
