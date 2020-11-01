@@ -6,7 +6,20 @@ The Ordinary Experts Jitsi Pattern is an open-source AWS CloudFormation template
 
 [Jitsi](https://jitsi.org/) is a set of free and open-source projects which allow easy building deployment of secure video conferencing solutions.
 
-## Current Environment Configurations
+## Product Setup
+
+*Prework*
+
+For this pattern to work, you must first:
+
+1. Have an AWS Route 53 Hosted Zone configured and delegated
+1. Have at least 1 available EIP (or at least 3 available EIPs if not using your own VPC)
+
+After that you can just launch the CloudFormation stack and fill out the required parameters.
+
+See the [Ordinary Experts AWS Marketplace Product Page](https://ordinaryexperts.com/products/jitsi-pattern/) for a more detailed walkthrough with screenshots.
+
+## Technical Details
 
 * Ubuntu 18.04.4 LTS
 * Apache 2.4.29
@@ -40,15 +53,9 @@ Optional configurations include the following:
 
 ## Jitsi Stack Infrastructure
 
-TODO: https://app.lucidchart.com/invitations/accept/10d3ed53-a0e1-46e2-8cad-ed974992507d
+![Topology Diagram](https://ordinaryexperts.com/img/services/oe_jitsi_patterns_topology_diagram.png)
 
-## Infrastructure Cost Estimates
-
-We have prepared the following AWS Simple Monthly Calculator links to help estimate the cost of running different configurations of this infrastructure:
-
-TODO
-
-## Setup
+## Developer Setup
 
 We are following the [3 Musketeers](https://3musketeers.io/) pattern for project layout / setup.
 
