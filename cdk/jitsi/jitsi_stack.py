@@ -16,7 +16,13 @@ from aws_cdk import (
 from oe_patterns_cdk_common import Vpc
 
 TWO_YEARS_IN_DAYS=731
-template_version = subprocess.check_output(["git", "describe"]).strip().decode('ascii')
+if 'TEMPLATE_VERSION' in os.environ:
+    template_version = os.environ['TEMPLATE_VERSION']
+else:
+    try:
+        template_version = subprocess.check_output(["git", "describe"]).strip().decode('ascii')
+    except:
+        template_version = "CICD"
 
 # When making a new development AMI:
 # 1) $ ave oe-patterns-dev make ami-ec2-build
