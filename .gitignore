@@ -21,3 +21,6 @@ dist/*
 
 # packer manifest file
 manifest.json
+
+# shared Makefiles
+common.mk
