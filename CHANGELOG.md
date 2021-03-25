@@ -1,5 +1,9 @@
 # Unreleased
 
+1.0.4
+-----
+* Fixing `make deploy` command
+
 1.0.3
 -----
 * Adding vpc domain for EIP
