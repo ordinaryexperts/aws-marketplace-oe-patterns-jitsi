@@ -67,7 +67,6 @@ deploy: build
 	--parameters JitsiInterfaceDefaultRemoteDisplayName="Ordinary Expert" \
 	--parameters JitsiInterfaceNativeAppName="Ordinary Experts Meet (native)" \
 	--parameters JitsiInterfaceShowBrandWatermark=true \
-	--parameters JitsiInterfaceShowWatermark=true \
 	--parameters JitsiInterfaceShowWatermarkForGuests=true \
 	--parameters JitsiInterfaceBrandWatermark=https://ordinaryexperts.com/img/logos/oe-logo-white-transparent-background-900x600.png \
 	--parameters JitsiInterfaceBrandWatermarkLink=https://ordinaryexperts.com \
