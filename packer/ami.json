@@ -19,12 +19,6 @@
       "type": "shell",
       "execute_command": "{{.Vars}} sudo -S -E bash '{{.Path}}'",
       "script": "./packer/setup.sh"
-    },
-    {
-      "type": "file",
-      "source": "config-jitsi.js",
-      "destination": "/usr/share/jitsi-meet/config.js",
-      "direction" : "download"
     }
   ],
   "post-processors": [
