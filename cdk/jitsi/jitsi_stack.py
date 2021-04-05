@@ -33,7 +33,7 @@ else:
 # make AMI_ID=ami-0056a066b13448536 ami-ec2-copy
 # on Mon Oct 26 20:25:31 UTC 2020.
 #AMI_ID="ami-0056a066b13448536"
-AMI_ID="ami-08c5b275c661a5d70"
+AMI_ID="ami-05e75c417af2e06fa"
 AMI_NAME="ordinary-experts-patterns-jitsi-1.0.3-5-g9be6efe-20201026-0815"
 generated_ami_ids = {
     "us-east-2": "ami-0f5ea2da92eb166f8",
@@ -52,7 +52,7 @@ generated_ami_ids = {
     "ap-southeast-2": "ami-07234ccb39301bacd",
     "sa-east-1": "ami-0a90c40170c59286c",
     #"us-east-1": "ami-0056a066b13448536"
-    "us-east-1": "ami-08c5b275c661a5d70"
+    "us-east-1": "ami-05e75c417af2e06fa"
 }
 # End generated code block.
 
