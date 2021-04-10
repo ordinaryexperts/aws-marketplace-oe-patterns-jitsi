@@ -168,16 +168,6 @@ echo "interfaceConfig.SHOW_BRAND_WATERMARK = ${JitsiInterfaceShowBrandWatermark}
 echo "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS = ${JitsiInterfaceShowWatermarkForGuests};" >> $INTERFACE_CONFIG
 echo "interfaceConfig.TOOLBAR_BUTTONS = [ 'microphone', 'camera', 'closedcaptions', 'desktop', 'embedmeeting', 'fullscreen', 'fodeviceselection', 'hangup', 'profile', 'chat', 'etherpad', 'sharedvideo', 'settings', 'raisehand', 'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts', 'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone', 'security' ];" >> $INTERFACE_CONFIG
 
-
-CONFIG=/usr/share/jitsi-meet/config.js
-cp $CONFIG $CONFIG.default
-echo "// Ordinary Experts Jitsi Patterns config overrides" >> $CONFIG
-
-#
-# We are patching the main Jitsi config below. We do this to ensure the UI only includes working features.
-# At this time recordings and live streaming are not fully supported.
-#
-echo "config.toolbarButtons=['microphone','camera','closedcaptions','desktop','embedmeeting','fullscreen','fodeviceselection','hangup','profile','chat','etherpad','sharedvideo','settings','raisehand','videoquality','filmstrip','invite','feedback','stats','shortcuts','tileview','select-background','download','help','mute-everyone','mute-video-everyone','security'];" >>  $CONFIG
 # brand watermark image
 JITSI_BRAND_WATERMARK=${JitsiInterfaceBrandWatermark}
 if [ ! -z "$JITSI_BRAND_WATERMARK" ];

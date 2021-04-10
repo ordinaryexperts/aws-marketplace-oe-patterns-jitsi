@@ -50,6 +50,9 @@ VERSION='2.0.5390-3'
 apt-get -y install apache2 debconf-utils gnupg2
 apt install apt-transport-https
 
+# disable default site
+a2dissite 000-default
+
 curl https://download.jitsi.org/jitsi-key.gpg.key | gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg
 echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
 apt-get update
