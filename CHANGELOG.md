@@ -1,5 +1,9 @@
 # Unreleased
 
+* Upgrading to Jitsi version 2.0.5390-3
+* Moving to common Makefile
+* Upgrading VPC common library (changes parameter names)
+
 1.0.4
 -----
 * Fixing `make deploy` command
