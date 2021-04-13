@@ -1,6 +1,6 @@
 version: '3'
 services:
-  jitsi:
+  devenv:
     build: .
     volumes:
     - .:/code
