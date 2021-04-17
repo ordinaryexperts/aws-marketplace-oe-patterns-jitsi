@@ -1,5 +1,7 @@
 # Unreleased
 
+2.0.0
+-----
 * Upgrading to Jitsi version 2.0.5390-3
 * Moving to common Makefile
 * Upgrading VPC common library (changes parameter names)
