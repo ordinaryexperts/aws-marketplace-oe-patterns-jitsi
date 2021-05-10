@@ -509,6 +509,42 @@ class JitsiStack(core.Stack):
             }
         }
 
+
+        # ec2 for Jibri
+        jitsi_sg = aws_ec2.CfnSecurityGroup(
+            self,
+            "JitsiSg",
+            group_description="Jibri security group",
+            vpc_id=vpc.id()
+        )
+
+        ec2_instance_profile = aws_iam.CfnInstanceProfile(
+	    self,
+	    "JibriInstanceProfile",
+            roles=[ iam_jitsi_instance_role.ref ]
+        )
+        with open("jitsi/jibri_launch_config_user_data.sh") as f:
+            jibri_launch_config_user_data = f.read()
+        ec2_launch_config = aws_autoscaling.CfnLaunchConfiguration(
+            self,
+            "JibriLaunchConfig",
+            image_id=core.Fn.find_in_map("AWSAMIRegionMap", core.Aws.REGION, "OEJITSI"),
+            instance_type=ec2_instance_type_param.value_as_string,
+            iam_instance_profile=ec2_instance_profile.ref,
+            security_groups=[ jitsi_sg.ref ],
+            user_data=(
+                core.Fn.base64(
+                    core.Fn.sub(
+                        jibri_launch_config_user_data,
+                        {
+                            "JitsiHostname": jitsi_hostname_param.value_as_string,
+                            "JitsiPublicIP": eip.ref
+                        }
+                    )
+                )
+            )
+        )
+
         #
         # OUTPUTS
         #
