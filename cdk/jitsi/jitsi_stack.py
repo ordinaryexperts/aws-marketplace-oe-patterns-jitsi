@@ -511,9 +511,9 @@ class JitsiStack(core.Stack):
 
 
         # ec2 for Jibri
-        jitsi_sg = aws_ec2.CfnSecurityGroup(
+        jitsi_sg_2 = aws_ec2.CfnSecurityGroup(
             self,
-            "JitsiSg",
+            "JibriSg",
             group_description="Jibri security group",
             vpc_id=vpc.id()
         )
@@ -531,7 +531,7 @@ class JitsiStack(core.Stack):
             image_id=core.Fn.find_in_map("AWSAMIRegionMap", core.Aws.REGION, "OEJITSI"),
             instance_type=ec2_instance_type_param.value_as_string,
             iam_instance_profile=ec2_instance_profile.ref,
-            security_groups=[ jitsi_sg.ref ],
+            security_groups=[ jitsi_sg_2.ref ],
             user_data=(
                 core.Fn.base64(
                     core.Fn.sub(
@@ -544,6 +544,35 @@ class JitsiStack(core.Stack):
                 )
             )
         )
+
+        # autoscaling
+        asg_1 = aws_autoscaling.CfnAutoScalingGroup(
+            self,
+            "JibriAsg",
+            launch_configuration_name=ec2_launch_config.ref,
+            desired_capacity="1",
+            max_size="1",
+            min_size="1",
+            vpc_zone_identifier=vpc.public_subnet_ids()
+        )
+        asg_1.cfn_options.creation_policy=core.CfnCreationPolicy(
+            resource_signal=core.CfnResourceSignal(
+                count=1,
+                timeout="PT15M"
+            )
+        )
+        asg_1.cfn_options.update_policy=core.CfnUpdatePolicy(
+            auto_scaling_rolling_update=core.CfnAutoScalingRollingUpdate(
+                max_batch_size=1,
+                min_instances_in_service=0,
+                pause_time="PT15M",
+                wait_on_resource_signals=True
+            )
+        )
+        core.Tag.add(asg_1, "Name", "{}/JibriAsg".format(core.Aws.STACK_NAME))
+
+
+
 
         #
         # OUTPUTS
