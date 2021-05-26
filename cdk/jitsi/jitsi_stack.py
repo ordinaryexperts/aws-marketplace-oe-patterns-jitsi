@@ -514,9 +514,93 @@ class JitsiStack(core.Stack):
                 }
             }
         }
-
-
+        # cloudwatch jibri
+        jibri_log_group = aws_logs.CfnLogGroup(
+            self,
+            "JibriAppLogGroup",
+            retention_in_days=TWO_YEARS_IN_DAYS
+        )
+        jibri_log_group.cfn_options.update_replace_policy = core.CfnDeletionPolicy.RETAIN
+        jibri_log_group.cfn_options.deletion_policy = core.CfnDeletionPolicy.RETAIN
+        system_log_group_2 = aws_logs.CfnLogGroup(
+            self,
+            "JibriSystemLogGroup",
+            retention_in_days=TWO_YEARS_IN_DAYS
+        )
+        system_log_group_2.cfn_options.update_replace_policy = core.CfnDeletionPolicy.RETAIN
+        system_log_group_2.cfn_options.deletion_policy = core.CfnDeletionPolicy.RETAIN
+        # iam for jibri
+        iam_jibri_instance_role = aws_iam.CfnRole(
+            self,
+            "jibriInstanceRole",
+            assume_role_policy_document=aws_iam.PolicyDocument(
+                statements=[
+                    aws_iam.PolicyStatement(
+                        effect=aws_iam.Effect.ALLOW,
+                        actions=[ "sts:AssumeRole" ],
+                        principals=[ aws_iam.ServicePrincipal("ec2.amazonaws.com") ]
+                    )
+                ]
+            ),
+            policies=[
+                aws_iam.CfnRole.PolicyProperty(
+                    policy_document=aws_iam.PolicyDocument(
+                        statements=[
+                            aws_iam.PolicyStatement(
+                                effect=aws_iam.Effect.ALLOW,
+                                actions=[
+                                    "logs:CreateLogStream",
+                                    "logs:DescribeLogStreams",
+                                    "logs:PutLogEvents"
+                                ],
+                                resources=[
+                                    system_log_group_2.attr_arn
+                                ]
+                            )
+                        ]
+                    ),
+                    policy_name="AllowStreamLogsToCloudWatch"
+                ),
+                aws_iam.CfnRole.PolicyProperty(
+                    policy_document=aws_iam.PolicyDocument(
+                        statements=[
+                            aws_iam.PolicyStatement(
+                                effect=aws_iam.Effect.ALLOW,
+                                actions=[
+                                    "ec2:AssociateAddress",
+                                    "ec2:DescribeVolumes",
+                                    "ec2:DescribeTags",
+                                    "cloudwatch:GetMetricStatistics",
+                                    "cloudwatch:ListMetrics",
+                                    "cloudwatch:PutMetricData"
+                                ],
+                                resources=[ "*" ]
+                            )
+                        ]
+                    ),
+                    policy_name="AllowStreamMetricsToCloudWatch"
+                ),
+                aws_iam.CfnRole.PolicyProperty(
+                    policy_document=aws_iam.PolicyDocument(
+                        statements=[
+                            aws_iam.PolicyStatement(
+                                effect=aws_iam.Effect.ALLOW,
+                                actions=[ "autoscaling:Describe*" ],
+                                resources=[ "*" ]
+                            )
+                        ]
+                    ),
+                    policy_name="AllowDescribeAutoScaling"
+                ),
+            ],
+            managed_policy_arns=[
+                "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+            ]
+        )
         # ec2 for Jibri
+
+
+
         jitsi_sg_2 = aws_ec2.CfnSecurityGroup(
             self,
             "JibriSg",
@@ -527,7 +611,7 @@ class JitsiStack(core.Stack):
         ec2_instance_profile = aws_iam.CfnInstanceProfile(
 	    self,
 	    "JibriInstanceProfile",
-            roles=[ iam_jitsi_instance_role.ref ]
+            roles=[ iam_jibri_instance_role.ref ]
         )
         with open("jitsi/jibri_launch_config_user_data.sh") as f:
             jibri_launch_config_user_data = f.read()
