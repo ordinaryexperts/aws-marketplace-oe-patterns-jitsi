@@ -168,7 +168,11 @@ jibri {
       recording {
         recordings-directory = "/srv/recordings"
       }
-      api {
+      api { 
+        http {
+            internal-api-port = 8001
+            external-api-port = 8002
+        }
         xmpp {
             environments = [
                 {
