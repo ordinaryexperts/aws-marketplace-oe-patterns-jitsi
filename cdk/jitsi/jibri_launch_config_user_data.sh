@@ -121,7 +121,6 @@ systemctl start amazon-cloudwatch-agent
 #
 apt -y install linux-image-extra-virtual
 ufw status
-=> “Active or inactive does not matter”
 ufw allow ssh
 ufw allow 80/tcp
 ufw allow 443/tcp
