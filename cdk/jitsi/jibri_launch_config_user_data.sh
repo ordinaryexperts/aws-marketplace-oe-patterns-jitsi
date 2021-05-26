@@ -160,11 +160,39 @@ sudo apt-get -y install jibri
 
 mkdir /srv/recordings
 chown jibri:jitsi /srv/recordings
-
+HOST_TO_USE=${JitsiHostname}
 ## Write custom config
-cat << EOF > /etc/jitsi/jibri/config.json
-These contents will be written to the file.
-        This line is indented.
+cp /etc/jitsi/jibri/jibri.conf /etc/jitsi/jibri/jibri.conf.old
+cat << EOF > /etc/jitsi/jibri/jibri.conf
+jibri {
+      api {
+        xmpp {
+            environments = [
+                {
+                  xmpp_server_hosts = [
+                    "${HOST_TO_USE}"
+                  ]
+                  xmpp_domain = "${HOST_TO_USE}"
+                  control_login {
+                    domain = "auth.${HOST_TO_USE}",
+                    username = "jibri",
+                    password ="jibriauthpass"
+                  },
+                  control_muc {
+                      domain = "internal.auth.jitsi-conf.abc.com",
+                      room_name = "JibriBrewery",
+                      nickname = "jibri-raj"
+                  },
+                  call_login {
+                      domain = "recorder.${HOST_TO_USE}",
+                      username = "recorder",
+                      password = "jibrirecorderpass"
+                  }
+                }
+            ]
+        }
+    }
+}
 EOF
 
 systemctl restart jibri   
