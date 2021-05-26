@@ -194,22 +194,19 @@ echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" 
 systemctl restart apache2
 
 
-HOST_TO_USE=${JitsiHostname}
-AUTH_PASS=${JibriAuthPass}
-RECORDER_PASS=${JibriRecorderPass}
 cat << EOF > /etc/jitsi/jibri/jibri_setup.lua
 ## Setup Jibri config 
 plugin_paths = { "/usr/share/jitsi-meet/prosody-plugins/" }
 
 -- domain mapper options, must at least have domain base set to use the mapper
-muc_mapper_domain_base = "${HOST_TO_USE}";
+muc_mapper_domain_base = "${JitsiHostname}";
 
 turncredentials_secret = "m5Zw2rB5kyDhjYuQ";
 
 turncredentials = {
-    { type = "stun", host = "${HOST_TO_USE}", port = "3478" },
-    { type = "turn", host = "${HOST_TO_USE}", port = "3478", transport = "udp" },
-    { type = "turns", host = "${HOST_TO_USE}", port = "5349", transport = "tcp" }
+    { type = "stun", host = "${JitsiHostname}", port = "3478" },
+    { type = "turn", host = "${JitsiHostname}", port = "3478", transport = "udp" },
+    { type = "turns", host = "${JitsiHostname}", port = "5349", transport = "tcp" }
 };
 
 cross_domain_bosh = false;
@@ -222,7 +219,7 @@ ssl = {
     ciphers = "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
 }
 
-VirtualHost "${HOST_TO_USE}"
+VirtualHost "${JitsiHostname}"
     -- enabled = false -- Remove this line to enable this host
     authentication = "anonymous"
     -- Properties below are modified by jitsi-meet-tokens package config
@@ -234,11 +231,11 @@ VirtualHost "${HOST_TO_USE}"
     -- Note that old-style SSL on port 5223 only supports one certificate, and will always
     -- use the global one.
     ssl = {
-        key = "/etc/prosody/certs/${HOST_TO_USE}.key";
-        certificate = "/etc/prosody/certs/${HOST_TO_USE}.crt";
+        key = "/etc/prosody/certs/${JitsiHostname}.key";
+        certificate = "/etc/prosody/certs/${JitsiHostname}.crt";
     }
-    speakerstats_component = "speakerstats.${HOST_TO_USE}"
-    conference_duration_component = "conferenceduration.${HOST_TO_USE}"
+    speakerstats_component = "speakerstats.${JitsiHostname}"
+    conference_duration_component = "conferenceduration.${JitsiHostname}"
     -- we need bosh
     modules_enabled = {
         "bosh";
@@ -250,69 +247,69 @@ VirtualHost "${HOST_TO_USE}"
         "muc_lobby_rooms";
     }
     c2s_require_encryption = false
-    lobby_muc = "lobby.${HOST_TO_USE}"
-    main_muc = "conference.${HOST_TO_USE}"
-    -- muc_lobby_whitelist = { "recorder.${HOST_TO_USE}" } -- Here we can whitelist jibri to enter lobby enabled rooms
+    lobby_muc = "lobby.${JitsiHostname}"
+    main_muc = "conference.${JitsiHostname}"
+    -- muc_lobby_whitelist = { "recorder.${JitsiHostname}" } -- Here we can whitelist jibri to enter lobby enabled rooms
 
-Component "conference.${HOST_TO_USE}" "muc"
+Component "conference.${JitsiHostname}" "muc"
     storage = "none"
     modules_enabled = {
         "muc_meeting_id";
         "muc_domain_mapper";
         --"token_verification";
     }
-    admins = { "focus@auth.${HOST_TO_USE}" }
+    admins = { "focus@auth.${JitsiHostname}" }
     muc_room_locking = false
     muc_room_default_public_jids = true
 
 -- internal muc component
-Component "internal.auth.${HOST_TO_USE}" "muc"
+Component "internal.auth.${JitsiHostname}" "muc"
     storage = "null"
     modules_enabled = {
         "ping";
     }
-    admins = { "focus@auth.${HOST_TO_USE}", "jvb@auth.${HOST_TO_USE}" }
+    admins = { "focus@auth.${JitsiHostname}", "jvb@auth.${JitsiHostname}" }
     muc_room_locking = false
     muc_room_default_public_jids = true
     muc_room_cache_size = 1000
 
-VirtualHost "auth.${HOST_TO_USE}"
+VirtualHost "auth.${JitsiHostname}"
     ssl = {
-        key = "/etc/prosody/certs/auth.${HOST_TO_USE}.key";
-        certificate = "/etc/prosody/certs/auth.${HOST_TO_USE}.crt";
+        key = "/etc/prosody/certs/auth.${JitsiHostname}.key";
+        certificate = "/etc/prosody/certs/auth.${JitsiHostname}.crt";
     }
     authentication = "internal_plain"
 
-VirtualHost "recorder.${HOST_TO_USE}"
+VirtualHost "recorder.${JitsiHostname}"
   modules_enabled = {
     "ping";
   }
   authentication = "internal_plain"
 
-Component "focus.${HOST_TO_USE}"
+Component "focus.${JitsiHostname}"
     component_secret = "Bb@1@sMc"
 
-Component "speakerstats.${HOST_TO_USE}" "speakerstats_component"
-    muc_component = "conference.${HOST_TO_USE}"
+Component "speakerstats.${JitsiHostname}" "speakerstats_component"
+    muc_component = "conference.${JitsiHostname}"
 
-Component "conferenceduration.${HOST_TO_USE}" "conference_duration_component"
-    muc_component = "conference.${HOST_TO_USE}"
+Component "conferenceduration.${JitsiHostname}" "conference_duration_component"
+    muc_component = "conference.${JitsiHostname}"
 
-Component "lobby.${HOST_TO_USE}" "muc"
+Component "lobby.${JitsiHostname}" "muc"
     storage = "none"
     restrict_room_creation = true
     muc_room_locking = false
     muc_room_default_public_jids = true
 EOF
-cp "/etc/jitsi/jibri/${HOST_TO_USE}.cfg.lua" "/etc/jitsi/jibri/${HOST_TO_USE}.old.cfg.lua"
-mv "/etc/jitsi/jibri/jibri_setup.lua" "/etc/jitsi/jibri/${HOST_TO_USE}.cfg.lua"
+cp "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua" "/etc/jitsi/jibri/${JitsiHostname}.old.cfg.lua"
+mv "/etc/jitsi/jibri/jibri_setup.lua" "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua"
 
 
-prosodyctl register jibri "auth.${HOST_TO_USE}" "${AUTH_PASS}"
-prosodyctl register recorder "recorder.${HOST_TO_USE}" "${RECORDER_PASS}"
+prosodyctl register jibri "auth.${JitsiHostname}" "${JibriAuthPass}"
+prosodyctl register recorder "recorder.${JitsiHostname}" "${JibriRecorderPass}"
 
 # Update SIP communicator
-echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${HOST_TO_USE}\r\norg.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties
+echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${JitsiHostname}\r\norg.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties
 #
 # associate EIP
 #

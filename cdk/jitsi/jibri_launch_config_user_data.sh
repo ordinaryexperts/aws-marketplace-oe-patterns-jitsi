@@ -174,23 +174,23 @@ jibri {
             environments = [
                 {
                   xmpp_server_hosts = [
-                    "${HOST_TO_USE}"
+                    "${JitsiHostname}"
                   ]
-                  xmpp_domain = "${HOST_TO_USE}"
+                  xmpp_domain = "${JitsiHostname}"
                   control_login {
-                    domain = "auth.${HOST_TO_USE}",
+                    domain = "auth.${JitsiHostname}",
                     username = "jibri",
-                    password ="${AUTH_PASS}"
+                    password ="${JibriAuthPass}"
                   }
                   control_muc {
-                      domain = "internal.auth.${HOST_TO_USE}",
+                      domain = "internal.auth.${JitsiHostname}",
                       room_name = "JibriBrewery",
                       nickname = "jibri-raj"
                   }
                   call_login {
-                      domain = "recorder.${HOST_TO_USE}",
+                      domain = "recorder.${JitsiHostname}",
                       username = "recorder",
-                      password = "${RECORDER_PASS}"
+                      password = "${JibriRecorderPass}"
                   }
                 }
             ]
