@@ -165,6 +165,9 @@ chown jibri:jitsi /srv/recordings
 cp /etc/jitsi/jibri/jibri.conf /etc/jitsi/jibri/jibri.conf.old
 cat << EOF > /etc/jitsi/jibri/jibri.conf
 jibri {
+      recording {
+        recordings-directory = "/srv/recording"
+      }
       api {
         xmpp {
             environments = [
