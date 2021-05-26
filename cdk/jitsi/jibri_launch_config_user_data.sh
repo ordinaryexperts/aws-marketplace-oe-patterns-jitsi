@@ -119,7 +119,7 @@ systemctl start amazon-cloudwatch-agent
 #
 # Jibri configuration
 #
-
+apt -y install linux-image-extra-virtual
 ufw status
 => “Active or inactive does not matter”
 ufw allow ssh
@@ -135,6 +135,8 @@ sed -e 's/GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/g' /etc/default/grub >> /etc/default
 mv /etc/default/grub_new /etc/default/grub
 
 update-grub
+
+echo "snd-aloop" >> /etc/modules 
 
 curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
 echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
@@ -163,6 +165,8 @@ chown jibri:jitsi /srv/recordings
 HOST_TO_USE=${JitsiHostname}
 ## Write custom config
 cp /etc/jitsi/jibri/jibri.conf /etc/jitsi/jibri/jibri.conf.old
+AUTH_PASS=${JibriAuthPass}
+RECORDER_PASS=${JibriRecorderPass}
 cat << EOF > /etc/jitsi/jibri/jibri.conf
 jibri {
       api {
@@ -176,17 +180,17 @@ jibri {
                   control_login {
                     domain = "auth.${HOST_TO_USE}",
                     username = "jibri",
-                    password ="jibriauthpass"
-                  },
+                    password ="${AUTH_PASS}"
+                  }
                   control_muc {
-                      domain = "internal.auth.jitsi-conf.abc.com",
+                      domain = "internal.auth.${HOST_TO_USE}",
                       room_name = "JibriBrewery",
                       nickname = "jibri-raj"
-                  },
+                  }
                   call_login {
                       domain = "recorder.${HOST_TO_USE}",
                       username = "recorder",
-                      password = "jibrirecorderpass"
+                      password = "${RECORDER_PASS}"
                   }
                 }
             ]
@@ -200,6 +204,10 @@ systemctl status jibri
 #
 # cloudformation signal
 #
+sudo usermod -aG adm,audio,video,plugdev jibri 
 
 
 cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JitsiAsg --region ${AWS::Region}
+
+# Reboot Jibri instance
+# reboot

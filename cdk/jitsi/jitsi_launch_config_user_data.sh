@@ -167,6 +167,14 @@ echo "interfaceConfig.NATIVE_APP_NAME = '${JitsiInterfaceNativeAppName}';" >>  $
 echo "interfaceConfig.SHOW_BRAND_WATERMARK = ${JitsiInterfaceShowBrandWatermark};" >> $INTERFACE_CONFIG
 echo "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS = ${JitsiInterfaceShowWatermarkForGuests};" >> $INTERFACE_CONFIG
 echo "interfaceConfig.TOOLBAR_BUTTONS = [ 'microphone', 'camera', 'closedcaptions', 'desktop', 'embedmeeting', 'fullscreen', 'fodeviceselection', 'hangup', 'profile', 'chat', 'etherpad', 'sharedvideo', 'settings', 'raisehand', 'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts', 'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone', 'security' ];" >> $INTERFACE_CONFIG
+echo "interfaceConfig.fileRecordingsEnabled = true;" >> $INTERFACE_CONFIG
+
+
+CONFIG=/usr/share/jitsi-meet/config.js
+cp $CONFIG $CONFIG.default
+echo "config.liveStreamingEnabled = true;" >> $CONFIG
+echo "config.liveStreamingEnabled = true;" >> $CONFIG
+
 
 # brand watermark image
 JITSI_BRAND_WATERMARK=${JitsiInterfaceBrandWatermark}
@@ -185,6 +193,126 @@ fi
 echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" >> $INTERFACE_CONFIG
 systemctl restart apache2
 
+
+HOST_TO_USE=${JitsiHostname}
+AUTH_PASS=${JibriAuthPass}
+RECORDER_PASS=${JibriRecorderPass}
+cat << EOF > /etc/jitsi/jibri/jibri_setup.lua
+## Setup Jibri config 
+plugin_paths = { "/usr/share/jitsi-meet/prosody-plugins/" }
+
+-- domain mapper options, must at least have domain base set to use the mapper
+muc_mapper_domain_base = "${HOST_TO_USE}";
+
+turncredentials_secret = "m5Zw2rB5kyDhjYuQ";
+
+turncredentials = {
+    { type = "stun", host = "${HOST_TO_USE}", port = "3478" },
+    { type = "turn", host = "${HOST_TO_USE}", port = "3478", transport = "udp" },
+    { type = "turns", host = "${HOST_TO_USE}", port = "5349", transport = "tcp" }
+};
+
+cross_domain_bosh = false;
+consider_bosh_secure = true;
+-- https_ports = { }; -- Remove this line to prevent listening on port 5284
+
+-- https://ssl-config.mozilla.org/#server=haproxy&version=2.1&config=intermediate&openssl=1.1.0g&guideline=5.4
+ssl = {
+    protocol = "tlsv1_2+";
+    ciphers = "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
+}
+
+VirtualHost "${HOST_TO_USE}"
+    -- enabled = false -- Remove this line to enable this host
+    authentication = "anonymous"
+    -- Properties below are modified by jitsi-meet-tokens package config
+    -- and authentication above is switched to "token"
+    --app_id="example_app_id"
+    --app_secret="example_app_secret"
+    -- Assign this host a certificate for TLS, otherwise it would use the one
+    -- set in the global section (if any).
+    -- Note that old-style SSL on port 5223 only supports one certificate, and will always
+    -- use the global one.
+    ssl = {
+        key = "/etc/prosody/certs/${HOST_TO_USE}.key";
+        certificate = "/etc/prosody/certs/${HOST_TO_USE}.crt";
+    }
+    speakerstats_component = "speakerstats.${HOST_TO_USE}"
+    conference_duration_component = "conferenceduration.${HOST_TO_USE}"
+    -- we need bosh
+    modules_enabled = {
+        "bosh";
+        "pubsub";
+        "ping"; -- Enable mod_ping
+        "speakerstats";
+        "turncredentials";
+        "conference_duration";
+        "muc_lobby_rooms";
+    }
+    c2s_require_encryption = false
+    lobby_muc = "lobby.${HOST_TO_USE}"
+    main_muc = "conference.${HOST_TO_USE}"
+    -- muc_lobby_whitelist = { "recorder.${HOST_TO_USE}" } -- Here we can whitelist jibri to enter lobby enabled rooms
+
+Component "conference.${HOST_TO_USE}" "muc"
+    storage = "none"
+    modules_enabled = {
+        "muc_meeting_id";
+        "muc_domain_mapper";
+        --"token_verification";
+    }
+    admins = { "focus@auth.${HOST_TO_USE}" }
+    muc_room_locking = false
+    muc_room_default_public_jids = true
+
+-- internal muc component
+Component "internal.auth.${HOST_TO_USE}" "muc"
+    storage = "null"
+    modules_enabled = {
+        "ping";
+    }
+    admins = { "focus@auth.${HOST_TO_USE}", "jvb@auth.${HOST_TO_USE}" }
+    muc_room_locking = false
+    muc_room_default_public_jids = true
+    muc_room_cache_size = 1000
+
+VirtualHost "auth.${HOST_TO_USE}"
+    ssl = {
+        key = "/etc/prosody/certs/auth.${HOST_TO_USE}.key";
+        certificate = "/etc/prosody/certs/auth.${HOST_TO_USE}.crt";
+    }
+    authentication = "internal_plain"
+
+VirtualHost "recorder.${HOST_TO_USE}"
+  modules_enabled = {
+    "ping";
+  }
+  authentication = "internal_plain"
+
+Component "focus.${HOST_TO_USE}"
+    component_secret = "Bb@1@sMc"
+
+Component "speakerstats.${HOST_TO_USE}" "speakerstats_component"
+    muc_component = "conference.${HOST_TO_USE}"
+
+Component "conferenceduration.${HOST_TO_USE}" "conference_duration_component"
+    muc_component = "conference.${HOST_TO_USE}"
+
+Component "lobby.${HOST_TO_USE}" "muc"
+    storage = "none"
+    restrict_room_creation = true
+    muc_room_locking = false
+    muc_room_default_public_jids = true
+EOF
+cp "/etc/jitsi/jibri/${HOST_TO_USE}.cfg.lua" "/etc/jitsi/jibri/${HOST_TO_USE}.old.cfg.lua"
+mv "/etc/jitsi/jibri/jibri_setup.lua" "/etc/jitsi/jibri/${HOST_TO_USE}.cfg.lua"
+
+
+prosodyctl register jibri "auth.${HOST_TO_USE}" "${AUTH_PASS}"
+prosodyctl register recorder "recorder.${HOST_TO_USE}" "${RECORDER_PASS}"
+
+# Update SIP communicator
+echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${HOST_TO_USE}\r\norg.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties
 #
 # associate EIP
 #

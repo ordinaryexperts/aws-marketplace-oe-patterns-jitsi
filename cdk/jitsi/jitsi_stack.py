@@ -24,6 +24,10 @@ else:
     except:
         template_version = "CICD"
 
+# Setup Jibri passwords
+JIBRI_AUTH_PASS="auth123"
+JIBRI_RECORDER_PASS="auth123"
+
 # When making a new development AMI:
 # 1) $ ave oe-patterns-dev make ami-ec2-build
 # 2) $ ave oe-patterns-dev make AMI_ID=ami-fromstep1 ami-ec2-copy
@@ -344,6 +348,8 @@ class JitsiStack(core.Stack):
                         {
                             "JitsiHostname": jitsi_hostname_param.value_as_string,
                             "JitsiPublicIP": eip.ref,
+                            "JibriAuthPass": JIBRI_AUTH_PASS,
+                            "JibriRecorderPass":  JIBRI_RECORDER_PASS,
                             "LetsEncryptCertificateEmail": notification_email_param.value_as_string
                         }
                     )
@@ -538,6 +544,8 @@ class JitsiStack(core.Stack):
                         jibri_launch_config_user_data,
                         {
                             "JitsiHostname": jitsi_hostname_param.value_as_string,
+                            "JibriAuthPass": JIBRI_AUTH_PASS,
+                            "JibriRecorderPass":  JIBRI_RECORDER_PASS,
                             "JitsiPublicIP": eip.ref
                         }
                     )
