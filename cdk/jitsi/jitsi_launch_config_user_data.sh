@@ -194,7 +194,7 @@ echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" 
 systemctl restart apache2
 
 
-cat << EOF > /etc/jitsi/jibri/jibri_setup.lua
+cat << EOF > /etc/prosody/conf.d/jibri_setup.lua
 ## Setup Jibri config 
 plugin_paths = { "/usr/share/jitsi-meet/prosody-plugins/" }
 
@@ -301,8 +301,8 @@ Component "lobby.${JitsiHostname}" "muc"
     muc_room_locking = false
     muc_room_default_public_jids = true
 EOF
-cp "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua" "/etc/jitsi/jibri/${JitsiHostname}.old.cfg.lua"
-mv "/etc/jitsi/jibri/jibri_setup.lua" "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua"
+cp "/etc/prosody/conf.d/${JitsiHostname}.cfg.lua" "/etc/prosody/conf.d/${JitsiHostname}.old.cfg.lua"
+mv "/etc/prosody/conf.d/jibri_setup.lua" "/etc/prosody/conf.d/${JitsiHostname}.cfg.lua"
 
 
 prosodyctl register jibri "auth.${JitsiHostname}" "${JibriAuthPass}"
