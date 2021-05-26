@@ -169,9 +169,8 @@ jibri {
         xmpp {
             environments = [
                 {
-                  xmpp_server_hosts = [
-                    "${JitsiHostname}"
-                  ]
+                  name = "main"
+                  xmpp_server_hosts = [ "${JitsiHostname}" ]
                   xmpp_domain = "${JitsiHostname}"
                   control_login {
                     domain = "auth.${JitsiHostname}",
