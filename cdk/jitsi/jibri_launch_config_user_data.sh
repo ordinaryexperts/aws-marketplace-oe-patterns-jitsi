@@ -166,7 +166,7 @@ cp /etc/jitsi/jibri/jibri.conf /etc/jitsi/jibri/jibri.conf.old
 cat << EOF > /etc/jitsi/jibri/jibri.conf
 jibri {
       recording {
-        recordings-directory = "/srv/recording"
+        recordings-directory = "/srv/recordings"
       }
       api {
         xmpp {
