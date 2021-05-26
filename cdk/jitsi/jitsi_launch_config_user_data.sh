@@ -359,6 +359,9 @@ while true; do
     fi
 done
 systemctl restart apache2
+systemctl restart jitsi-videobridge2.service
+systemctl restart jicofo.service
+systemctl restart prosody.service
 success=$?
 
 #
