@@ -161,11 +161,8 @@ sudo apt-get -y install jibri
 
 mkdir /srv/recordings
 chown jibri:jitsi /srv/recordings
-HOST_TO_USE=${JitsiHostname}
 ## Write custom config
 cp /etc/jitsi/jibri/jibri.conf /etc/jitsi/jibri/jibri.conf.old
-AUTH_PASS=${JibriAuthPass}
-RECORDER_PASS=${JibriRecorderPass}
 cat << EOF > /etc/jitsi/jibri/jibri.conf
 jibri {
       api {
