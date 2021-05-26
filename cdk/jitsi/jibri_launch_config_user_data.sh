@@ -203,7 +203,7 @@ systemctl status jibri
 sudo usermod -aG adm,audio,video,plugdev jibri 
 
 
-cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JitsiAsg --region ${AWS::Region}
+cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JibriAsg --region ${AWS::Region}
 
 # Reboot Jibri instance
 # reboot
