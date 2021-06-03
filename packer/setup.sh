@@ -107,6 +107,7 @@ sudo apt-get -y install jibri
 
 mkdir /srv/recordings
 chown jibri:jitsi /srv/recordings
+sudo usermod -aG adm,audio,video,plugdev jibri 
 
 # not configuring firewall with ufw in favor of AWS security groups
 
