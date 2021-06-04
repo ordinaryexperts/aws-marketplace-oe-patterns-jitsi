@@ -46,7 +46,7 @@ cd -
 
 # Pin down a specific version
 # as of 2021-04-02, this is the latest stable release
-VERSION='2.0.5390-3'
+JITSI_VERSION='2.0.5870-1'
 apt-get -y install apache2 debconf-utils gnupg2
 apt install apt-transport-https
 
@@ -57,7 +57,7 @@ curl https://download.jitsi.org/jitsi-key.gpg.key | gpg --dearmor > /usr/share/k
 echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
 apt-get update
 rm -rf /var/cache/apt/archives/*.deb
-apt-get -y install --download-only jitsi-meet=${VERSION}
+apt-get -y install --download-only jitsi-meet=${JITSI_VERSION}
 
 mkdir /root/jitsi-debs
 mv /var/cache/apt/archives/*.deb /root/jitsi-debs
@@ -100,10 +100,9 @@ apt-get -y install default-jre-headless ffmpeg curl alsa-utils icewm xdotool xse
 
 
 # Install Jibri
-wget -qO - https://download.jitsi.org/jitsi-key.gpg.key | sudo apt-key add - 
-sudo sh -c "echo 'deb https://download.jitsi.org stable/' > /etc/apt/sources.list.d/jitsi-stable.list"
+JIBRI_VERSION='2.0.5870-1'
 sudo apt-get -y update 
-sudo apt-get -y install jibri    
+sudo apt-get -y install jibri=${JIBRI_VERSION} 
 
 mkdir /srv/recordings
 chown jibri:jitsi /srv/recordings
