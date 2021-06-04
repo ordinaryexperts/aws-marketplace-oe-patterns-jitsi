@@ -100,7 +100,7 @@ apt-get -y install default-jre-headless ffmpeg curl alsa-utils icewm xdotool xse
 
 
 # Install Jibri
-JIBRI_VERSION='2.0.5870-1'
+JIBRI_VERSION='8.0-93-g51fe7a2-1'
 sudo apt-get -y update 
 sudo apt-get -y install jibri=${JIBRI_VERSION} 
 
