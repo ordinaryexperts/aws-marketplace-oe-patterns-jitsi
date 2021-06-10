@@ -46,7 +46,7 @@ cd -
 
 # Pin down a specific version
 # as of 2021-04-16, this is the latest stable release
-JITSI_VERSION='2.0.5870-1'
+JITSI_VERSION='2.0.5963-1'
 apt-get -y install apache2 debconf-utils gnupg2
 apt install apt-transport-https
 
