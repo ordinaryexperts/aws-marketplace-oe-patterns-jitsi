@@ -53,6 +53,24 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
             "timezone": "UTC"
           },
           {
+            "file_path": "/var/log/cfn-init.log",
+            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/cfn-init.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/cfn-init-cmd.log",
+            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/cfn-init-cmd.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/cfn-wire.log",
+            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/cfn-wire.log",
+            "timezone": "UTC"
+          },
+          {
             "file_path": "/var/log/cloud-init.log",
             "log_group_name": "${JitsiSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/cloud-init.log",
@@ -105,6 +123,18 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
             "log_group_name": "${JitsiAppLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/prosody/prosody.log",
             "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/apache2/other_vhosts_access.log",
+            "log_group_name": "${JitsiAppLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/apache2/other_vhosts_access.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/apache2/error.log",
+            "log_group_name": "${JitsiAppLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/apache2/error.log",
+            "timezone": "UTC"
           }
         ]
       }
@@ -128,12 +158,10 @@ echo "jitsi-videobridge2 jitsi-videobridge/jvb-hostname string ${JitsiHostname}"
 echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)" | debconf-set-selections
 
 # jitsi-meet was downloaded but not installed during AMI build...
-dpkg -i /root/jitsi-debs/lib*.deb
 dpkg -i /root/jitsi-debs/lua*.deb
 dpkg -i /root/jitsi-debs/prosody*.deb
-dpkg -i /root/jitsi-debs/uuid*.deb
 dpkg -i /root/jitsi-debs/jitsi-videobridge*.deb
-dpkg -i /root/jitsi-debs/ji*.deb
+dpkg -i /root/jitsi-debs/*.deb
 
 # configure Jitsi behind NAT Gateway
 JVB_CONFIG=/etc/jitsi/videobridge/sip-communicator.properties
@@ -160,9 +188,13 @@ JITSI_IMAGE_DIR=/usr/share/jitsi-meet/images
 cp $INTERFACE_CONFIG $INTERFACE_CONFIG.default
 echo "// Ordinary Experts Jitsi Patterns config overrides" >> $INTERFACE_CONFIG
 echo "interfaceConfig.APP_NAME = '${JitsiInterfaceAppName}';" >> $INTERFACE_CONFIG
-echo "interfaceConfig.DEFAULT_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
+if [[ ! -z "${JitsiInterfaceBrandWatermark}" ]]; then
+    echo "interfaceConfig.DEFAULT_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
+fi
 echo "interfaceConfig.DEFAULT_REMOTE_DISPLAY_NAME = '${JitsiInterfaceDefaultRemoteDisplayName}';" >> $INTERFACE_CONFIG
-echo "interfaceConfig.DEFAULT_WELCOME_PAGE_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
+if [[ ! -z "${JitsiInterfaceBrandWatermark}" ]]; then
+    echo "interfaceConfig.DEFAULT_WELCOME_PAGE_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
+fi
 echo "interfaceConfig.NATIVE_APP_NAME = '${JitsiInterfaceNativeAppName}';" >>  $INTERFACE_CONFIG
 echo "interfaceConfig.SHOW_BRAND_WATERMARK = ${JitsiInterfaceShowBrandWatermark};" >> $INTERFACE_CONFIG
 echo "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS = ${JitsiInterfaceShowWatermarkForGuests};" >> $INTERFACE_CONFIG

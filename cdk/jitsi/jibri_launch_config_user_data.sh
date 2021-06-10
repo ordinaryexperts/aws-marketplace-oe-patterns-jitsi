@@ -161,7 +161,7 @@ jibri {
 EOF
 
 systemctl restart jibri   
-systemctl status jibri 
+success=$?
 #
 # cloudformation signal
 #
