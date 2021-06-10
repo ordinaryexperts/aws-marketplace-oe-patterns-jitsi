@@ -160,6 +160,7 @@ jibri {
 }
 EOF
 
+systemctl enable jibri
 systemctl restart jibri   
 success=$?
 #

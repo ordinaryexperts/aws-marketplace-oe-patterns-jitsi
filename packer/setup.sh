@@ -174,3 +174,10 @@ apt-get -y update
 
 # https://aws.amazon.com/articles/how-to-share-and-use-public-amis-in-a-secure-manner/
 find / -name "authorized_keys" -exec rm -f {} \;
+
+# disable Jibri service so the AMI
+# can be configured before we start it.
+# we will reenable the service user data script
+# 
+
+systemctl disable jibri
