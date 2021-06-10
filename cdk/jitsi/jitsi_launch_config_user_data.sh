@@ -393,7 +393,7 @@ done
 systemctl restart apache2
 sudo systemctl enable prosody.service
 sudo systemctl enable jicofo.service
-sudo systemctl enablejitsi-videobridge2.service
+sudo systemctl enable jitsi-videobridge2.service
 sudo systemctl restart prosody.service
 sudo systemctl restart jicofo.service
 sudo systemctl restart jitsi-videobridge2.service
