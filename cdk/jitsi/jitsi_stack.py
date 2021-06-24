@@ -182,6 +182,12 @@ class JitsiStack(core.Stack):
             default="",
             description="Optional: Specify an email address to get emails about deploys, Let's Encrypt, and other system events."
         )
+        secret_arn_param = core.CfnParameter(
+            self,
+            "SecretArn",
+            default="",
+            description="Optional: Secrets Manager secret ARN used to store database credentials and other configuration. If not specified, a secret will be created."
+        )
 
         #
         # CONDITIONS
