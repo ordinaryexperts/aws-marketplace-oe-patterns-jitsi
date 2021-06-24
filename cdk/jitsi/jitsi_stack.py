@@ -189,6 +189,7 @@ class JitsiStack(core.Stack):
             description="Optional: Secrets Manager secret ARN used to store database credentials and other configuration. If not specified, a secret will be created."
         )
 
+
         #
         # CONDITIONS
         #
@@ -198,10 +199,52 @@ class JitsiStack(core.Stack):
             "NotificationEmailExistsCondition",
             expression=core.Fn.condition_not(core.Fn.condition_equals(notification_email_param.value, ""))
         )
+        secret_arn_exists_condition = core.CfnCondition(
+            self,
+            "SecretArnExistsCondition",
+            expression=core.Fn.condition_not(core.Fn.condition_equals(secret_arn_param.value, ""))
+        )
+        secret_arn_not_exists_condition = core.CfnCondition(
+            self,
+            "SecretArnNotExistsCondition",
+            expression=core.Fn.condition_equals(secret_arn_param.value, "")
+        )
 
         #
         # RESOURCES
         #
+
+        # secrets manager
+
+        secret = aws_secretsmanager.CfnSecret(
+            self,
+            "Secret",
+            generate_secret_string=aws_secretsmanager.CfnSecret.GenerateSecretStringProperty(
+                exclude_characters="\"@/\\\"'$,[]*?{}~\#%<>|^",
+                exclude_punctuation=True,
+                generate_string_key="password",
+                secret_string_template=json.dumps({"username":"dbadmin"})
+            ),
+            name="{}/wordpress/secret".format(core.Aws.STACK_NAME)
+        )
+        secret.cfn_options.condition = secret_arn_not_exists_condition
+        config_secrets = [
+            'JIBRI_AUTH_PASS',
+            'JIBRI_RECORDER_PASS'
+        ]
+        config_secret_constructs = {}
+        for config_secret in config_secrets:
+            config_secret_constructs[config_secret] = aws_secretsmanager.CfnSecret(
+                self,
+                "Config_{}".format(config_secret),
+                generate_secret_string=aws_secretsmanager.CfnSecret.GenerateSecretStringProperty(
+                    exclude_characters="\"'",
+                    generate_string_key="value",
+                    password_length=64,
+                    secret_string_template=json.dumps({})
+                ),
+                name="{}/jitsi/secret_{}".format(core.Aws.STACK_NAME, config_secret)
+            )
 
         # vpc
         vpc = Vpc(
@@ -274,7 +317,17 @@ class JitsiStack(core.Stack):
                                     "logs:PutLogEvents"
                                 ],
                                 resources=[
-                                    system_log_group.attr_arn
+                                    system_log_group.attr_arn,
+                                    core.Token.as_string(
+                                        core.Fn.condition_if(
+                                            secret_arn_exists_condition.logical_id,
+                                            secret_arn_param.value_as_string,
+                                            secret.ref
+                                        )
+                                    ),
+                                    # TODO: could this be done without repeating the list?
+                                    config_secret_constructs['JIBRI_AUTH_PASS'].ref,
+                                    config_secret_constructs['JIBRI_RECORDER_PASS'].ref
                                 ]
                             )
                         ]
@@ -568,7 +621,17 @@ class JitsiStack(core.Stack):
                                     "logs:PutLogEvents"
                                 ],
                                 resources=[
-                                    system_log_group_2.attr_arn
+                                    system_log_group_2.attr_arn,
+                                    core.Token.as_string(
+                                        core.Fn.condition_if(
+                                            secret_arn_exists_condition.logical_id,
+                                            secret_arn_param.value_as_string,
+                                            secret.ref
+                                        )
+                                    ),
+                                    # TODO: could this be done without repeating the list?
+                                    config_secret_constructs['JIBRI_AUTH_PASS'].ref,
+                                    config_secret_constructs['JIBRI_RECORDER_PASS'].ref
                                 ]
                             )
                         ]
