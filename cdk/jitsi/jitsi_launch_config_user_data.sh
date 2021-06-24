@@ -179,6 +179,30 @@ sed -i 's/#DefaultTasksMax=/DefaultTasksMax=65000/g' /etc/systemd/system.conf
 systemctl daemon-reload
 systemctl restart jitsi-videobridge2
 
+
+PREFIX="${Prefix}"
+# 
+# unpack secrets manager
+#
+# secretsmanager
+SECRET_ARN="${SecretArn}"
+mkdir -p /opt/oe/patterns/jitsi/
+echo $SECRET_ARN >> /opt/oe/patterns/jitsi/secret-arn.txt
+
+SECRET_NAME=$(aws secretsmanager list-secrets --query "SecretList[?ARN=='$SECRET_ARN'].Name" --output text)
+echo $SECRET_NAME >> /opt/oe/patterns/jitsi/secret-name.txt
+
+AUTH_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
+RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
+AUTH_PASS=`aws secretsmanager get-secret-value --secret-id ${AUTH_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
+RECORDER_PASS=`aws secretsmanager get-secret-value --secret-id ${RECORDER_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
+
+aws ssm get-parameter \
+    --name "/aws/reference/secretsmanager/$SECRET_NAME" \
+    --with-decryption \
+    --query Parameter.Value \
+| jq -r . >> /opt/oe/patterns/jitsi/secret.json
+
 #
 # customize Jitsi interface
 #
@@ -337,8 +361,8 @@ cp "/etc/prosody/conf.d/${JitsiHostname}.cfg.lua" "/etc/prosody/conf.d/${JitsiHo
 mv "/etc/prosody/conf.d/jibri_setup.lua" "/etc/prosody/conf.d/${JitsiHostname}.cfg.lua"
 
 
-prosodyctl register jibri "auth.${JitsiHostname}" "${JibriAuthPass}"
-prosodyctl register recorder "recorder.${JitsiHostname}" "${JibriRecorderPass}"
+prosodyctl register jibri "auth.${JitsiHostname}" "${AUTH_PASS}"
+prosodyctl register recorder "recorder.${JitsiHostname}" "${RECORDER_PASS}"
 
 # Update SIP communicator
 echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${JitsiHostname}\r\norg.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties

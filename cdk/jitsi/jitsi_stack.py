@@ -350,7 +350,15 @@ class JitsiStack(core.Stack):
                             "JitsiPublicIP": eip.ref,
                             "JibriAuthPass": JIBRI_AUTH_PASS,
                             "JibriRecorderPass":  JIBRI_RECORDER_PASS,
-                            "LetsEncryptCertificateEmail": notification_email_param.value_as_string
+                            "LetsEncryptCertificateEmail": notification_email_param.value_as_string,
+                            "SecretArn": core.Token.as_string(
+                                core.Fn.condition_if(
+                                    secret_arn_exists_condition.logical_id,
+                                    secret_arn_param.value_as_string,
+                                    secret.ref
+                                )
+                            ),
+                            "Prefix": "{}/jitsi/secret".format(core.Aws.STACK_NAME)
                         }
                     )
                 )
@@ -630,7 +638,15 @@ class JitsiStack(core.Stack):
                             "JitsiHostname": jitsi_hostname_param.value_as_string,
                             "JibriAuthPass": JIBRI_AUTH_PASS,
                             "JibriRecorderPass":  JIBRI_RECORDER_PASS,
-                            "JitsiPublicIP": eip.ref
+                            "JitsiPublicIP": eip.ref,
+                            "SecretArn": core.Token.as_string(
+                                core.Fn.condition_if(
+                                    secret_arn_exists_condition.logical_id,
+                                    secret_arn_param.value_as_string,
+                                    secret.ref
+                                )
+                            ),
+                            "Prefix": "{}/jitsi/secret".format(core.Aws.STACK_NAME)
                         }
                     )
                 )
