@@ -77,7 +77,7 @@ ufw allow 5347
 apt -y install linux-image-extra-virtual
 sed /GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/ /etc/default/grub
 sed -e 's/GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/g' /etc/default/grub >> /etc/default/grub_new
-mv /etc/default/grub_new /etc/default/grub
+curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASEmv /etc/default/grub_new /etc/default/grub
 
 update-grub
 
@@ -88,7 +88,8 @@ echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /et
 apt-get -y update
 apt-get -y install google-chrome-stable
 
-CHROME_DRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`
+#CHROME_DRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`
+CHROME_DRIVER_VERSION='91.0.4472.101'
 wget -N http://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip -P ~/
 unzip ~/chromedriver_linux64.zip -d ~/
 rm ~/chromedriver_linux64.zip
