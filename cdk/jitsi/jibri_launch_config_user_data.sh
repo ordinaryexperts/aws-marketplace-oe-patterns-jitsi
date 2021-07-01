@@ -116,6 +116,25 @@ EOF
 systemctl enable amazon-cloudwatch-agent
 systemctl start amazon-cloudwatch-agent
 
+
+# secretsmanager
+SECRET_ARN="${SecretArn}"
+mkdir -p /opt/oe/patterns/jitsi/
+echo $SECRET_ARN >> /opt/oe/patterns/jitsi/secret-arn.txt
+
+SECRET_NAME=$(aws secretsmanager list-secrets --query "SecretList[?ARN=='$SECRET_ARN'].Name" --output text)
+echo $SECRET_NAME >> /opt/oe/patterns/jitsi/secret-name.txt
+
+AUTH_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
+RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
+AUTH_PASS=`aws secretsmanager get-secret-value --secret-id ${AUTH_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
+RECORDER_PASS=`aws secretsmanager get-secret-value --secret-id ${RECORDER_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
+
+aws ssm get-parameter \
+    --name "/aws/reference/secretsmanager/$SECRET_NAME" \
+    --with-decryption \
+    --query Parameter.Value \
+| jq -r . >> /opt/oe/patterns/jitsi/secret.json
 #
 # Jibri configuration
 #
@@ -141,7 +160,7 @@ jibri {
                   control_login {
                     domain = "auth.${JitsiHostname}",
                     username = "jibri",
-                    password ="${JibriAuthPass}"
+                    password ="${AUTH_PASS}"
                   }
                   control_muc {
                       domain = "internal.auth.${JitsiHostname}",
@@ -151,7 +170,7 @@ jibri {
                   call_login {
                       domain = "recorder.${JitsiHostname}",
                       username = "recorder",
-                      password = "${JibriRecorderPass}"
+                      password = "${RECORDER_PASS}"
                   }
                 }
             ]
@@ -159,6 +178,8 @@ jibri {
     }
 }
 EOF
+
+
 
 systemctl enable jibri
 systemctl restart jibri   

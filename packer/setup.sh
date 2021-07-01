@@ -178,7 +178,7 @@ find / -name "authorized_keys" -exec rm -f {} \;
 
 # disable Jibri service so the AMI
 # can be configured before we start it.
-# we will reenable the service user data script
+# we will reenable the service in the user data script
 # 
 
 systemctl disable jibri
