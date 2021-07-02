@@ -9,6 +9,7 @@ from aws_cdk import (
     aws_iam,
     aws_logs,
     aws_route53,
+    aws_secretsmanager,
     aws_sns,
     core
 )
