@@ -125,10 +125,10 @@ echo $SECRET_ARN >> /opt/oe/patterns/jitsi/secret-arn.txt
 SECRET_NAME=$(aws secretsmanager list-secrets --query "SecretList[?ARN=='$SECRET_ARN'].Name" --output text)
 echo $SECRET_NAME >> /opt/oe/patterns/jitsi/secret-name.txt
 
-AUTH_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
-RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
-AUTH_PASS=`aws secretsmanager get-secret-value --secret-id ${AUTH_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
-RECORDER_PASS=`aws secretsmanager get-secret-value --secret-id ${RECORDER_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
+SECRET_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
+SECRET_RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
+SECRET_AUTH_PASS=$(aws secretsmanager get-secret-value --secret-id ${!SECRET_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`)
+SECRET_RECORDER_PASS=$(aws secretsmanager get-secret-value --secret-id ${!SECRET_RECORDER_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`)
 
 aws ssm get-parameter \
     --name "/aws/reference/secretsmanager/$SECRET_NAME" \
@@ -160,7 +160,7 @@ jibri {
                   control_login {
                     domain = "auth.${JitsiHostname}",
                     username = "jibri",
-                    password ="${AUTH_PASS}"
+                    password ="${!SECRET_AUTH_PASS}"
                   }
                   control_muc {
                       domain = "internal.auth.${JitsiHostname}",
@@ -170,7 +170,7 @@ jibri {
                   call_login {
                       domain = "recorder.${JitsiHostname}",
                       username = "recorder",
-                      password = "${RECORDER_PASS}"
+                      password = "${!SECRET_RECORDER_PASS}"
                   }
                 }
             ]

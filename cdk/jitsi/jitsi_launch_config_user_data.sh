@@ -192,10 +192,10 @@ echo $SECRET_ARN >> /opt/oe/patterns/jitsi/secret-arn.txt
 SECRET_NAME=$(aws secretsmanager list-secrets --query "SecretList[?ARN=='$SECRET_ARN'].Name" --output text)
 echo $SECRET_NAME >> /opt/oe/patterns/jitsi/secret-name.txt
 
-AUTH_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
-RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
-AUTH_PASS=`aws secretsmanager get-secret-value --secret-id ${AUTH_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
-RECORDER_PASS=`aws secretsmanager get-secret-value --secret-id ${RECORDER_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
+SECRET_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
+SECRET_RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
+SECRET_AUTH_PASS=$(aws secretsmanager get-secret-value --secret-id ${!SECRET_AUTH_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`)
+SECRET_RECORDER_PASS=$(aws secretsmanager get-secret-value --secret-id ${!SECRET_RECORDER_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`)
 
 aws ssm get-parameter \
     --name "/aws/reference/secretsmanager/$SECRET_NAME" \
@@ -361,8 +361,8 @@ cp "/etc/prosody/conf.d/${JitsiHostname}.cfg.lua" "/etc/prosody/conf.d/${JitsiHo
 mv "/etc/prosody/conf.d/jibri_setup.lua" "/etc/prosody/conf.d/${JitsiHostname}.cfg.lua"
 
 
-prosodyctl register jibri "auth.${JitsiHostname}" "${AUTH_PASS}"
-prosodyctl register recorder "recorder.${JitsiHostname}" "${RECORDER_PASS}"
+prosodyctl register jibri "auth.${JitsiHostname}" "${!SECRET_AUTH_PASS}"
+prosodyctl register recorder "recorder.${JitsiHostname}" "${!SECRET_RECORDER_PASS}"
 
 # Update SIP communicator
 echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${JitsiHostname}\r\norg.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties
