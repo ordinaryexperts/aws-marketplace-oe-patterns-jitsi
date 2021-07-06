@@ -120,10 +120,10 @@ systemctl start amazon-cloudwatch-agent
 mkdir -p /opt/oe/patterns/jitsi
 # secretsmanager
 SECRET_ARN="${SecretArn}"
-PREFIX="${Prefix}"
 SECRET_ARN="${SecretArn}"
-AUTH_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
-RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
+AUTH_KEY="${Prefix}_JIBRI_AUTH_PASS"
+RECORDER_KEY="${Prefix}_JIBRI_RECORDER_PASS"
+
 AUTH_VAL=`aws secretsmanager get-secret-value --secret-id $AUTH_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
 RECORDER_VAL=`aws secretsmanager get-secret-value --secret-id $RECORDER_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
 

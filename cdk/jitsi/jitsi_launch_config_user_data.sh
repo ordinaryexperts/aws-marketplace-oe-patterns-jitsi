@@ -128,10 +128,10 @@ echo "jitsi-videobridge2 jitsi-videobridge/jvb-hostname string ${JitsiHostname}"
 echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)" | debconf-set-selections
 
 # jitsi-meet was downloaded but not installed during AMI build...
-dpkg -i /root/jitsi-debs/lib*.deb
+#dpkg -i /root/jitsi-debs/lib*.deb
 dpkg -i /root/jitsi-debs/lua*.deb
 dpkg -i /root/jitsi-debs/prosody*.deb
-dpkg -i /root/jitsi-debs/uuid*.deb
+#dpkg -i /root/jitsi-debs/uuid*.deb
 dpkg -i /root/jitsi-debs/jitsi-videobridge*.deb
 dpkg -i /root/jitsi-debs/ji*.deb
 
@@ -154,10 +154,9 @@ systemctl restart jitsi-videobridge2
 mkdir -p /opt/oe/patterns/jitsi
 
 # secretsmanager
-PREFIX="${Prefix}"
 SECRET_ARN="${SecretArn}"
-AUTH_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
-RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
+AUTH_KEY="${Prefix}_JIBRI_AUTH_PASS"
+RECORDER_KEY="${Prefix}_JIBRI_RECORDER_PASS"
 AUTH_VAL=`aws secretsmanager get-secret-value --secret-id $AUTH_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
 RECORDER_VAL=`aws secretsmanager get-secret-value --secret-id $RECORDER_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
 #
