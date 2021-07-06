@@ -53,6 +53,24 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
             "timezone": "UTC"
           },
           {
+            "file_path": "/var/log/cfn-init.log",
+            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/cfn-init.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/cfn-init-cmd.log",
+            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/cfn-init-cmd.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/cfn-wire.log",
+            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/cfn-wire.log",
+            "timezone": "UTC"
+          },
+          {
             "file_path": "/var/log/cloud-init.log",
             "log_group_name": "${JitsiSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/cloud-init.log",
@@ -105,6 +123,18 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
             "log_group_name": "${JitsiAppLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/prosody/prosody.log",
             "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/apache2/other_vhosts_access.log",
+            "log_group_name": "${JitsiAppLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/apache2/other_vhosts_access.log",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/apache2/error.log",
+            "log_group_name": "${JitsiAppLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/apache2/error.log",
+            "timezone": "UTC"
           }
         ]
       }
@@ -128,12 +158,10 @@ echo "jitsi-videobridge2 jitsi-videobridge/jvb-hostname string ${JitsiHostname}"
 echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)" | debconf-set-selections
 
 # jitsi-meet was downloaded but not installed during AMI build...
-dpkg -i /root/jitsi-debs/lib*.deb
 dpkg -i /root/jitsi-debs/lua*.deb
 dpkg -i /root/jitsi-debs/prosody*.deb
-dpkg -i /root/jitsi-debs/uuid*.deb
 dpkg -i /root/jitsi-debs/jitsi-videobridge*.deb
-dpkg -i /root/jitsi-debs/ji*.deb
+dpkg -i /root/jitsi-debs/*.deb
 
 # configure Jitsi behind NAT Gateway
 JVB_CONFIG=/etc/jitsi/videobridge/sip-communicator.properties
@@ -151,15 +179,30 @@ sed -i 's/#DefaultTasksMax=/DefaultTasksMax=65000/g' /etc/systemd/system.conf
 systemctl daemon-reload
 systemctl restart jitsi-videobridge2
 
-mkdir -p /opt/oe/patterns/jitsi
 
-# secretsmanager
 PREFIX="${Prefix}"
+# 
+# unpack secrets manager
+#
+# secretsmanager
 SECRET_ARN="${SecretArn}"
-AUTH_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
-RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
-AUTH_VAL=`aws secretsmanager get-secret-value --secret-id $AUTH_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
-RECORDER_VAL=`aws secretsmanager get-secret-value --secret-id $RECORDER_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
+mkdir -p /opt/oe/patterns/jitsi/
+echo $SECRET_ARN >> /opt/oe/patterns/jitsi/secret-arn.txt
+
+SECRET_NAME=$(aws secretsmanager list-secrets --query "SecretList[?ARN=='$SECRET_ARN'].Name" --output text)
+echo $SECRET_NAME >> /opt/oe/patterns/jitsi/secret-name.txt
+
+SECRET_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
+SECRET_RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
+SECRET_AUTH_PASS=$(aws secretsmanager get-secret-value --secret-id ${!SECRET_AUTH_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`)
+SECRET_RECORDER_PASS=$(aws secretsmanager get-secret-value --secret-id ${!SECRET_RECORDER_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`)
+
+#aws ssm get-parameter \
+#    --name "/aws/reference/secretsmanager/$SECRET_NAME" \
+#    --with-decryption \
+#    --query Parameter.Value \
+#| jq -r . >> /opt/oe/patterns/jitsi/secret.json
+
 #
 # customize Jitsi interface
 #
@@ -169,9 +212,13 @@ JITSI_IMAGE_DIR=/usr/share/jitsi-meet/images
 cp $INTERFACE_CONFIG $INTERFACE_CONFIG.default
 echo "// Ordinary Experts Jitsi Patterns config overrides" >> $INTERFACE_CONFIG
 echo "interfaceConfig.APP_NAME = '${JitsiInterfaceAppName}';" >> $INTERFACE_CONFIG
-echo "interfaceConfig.DEFAULT_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
+if [[ ! -z "${JitsiInterfaceBrandWatermark}" ]]; then
+    echo "interfaceConfig.DEFAULT_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
+fi
 echo "interfaceConfig.DEFAULT_REMOTE_DISPLAY_NAME = '${JitsiInterfaceDefaultRemoteDisplayName}';" >> $INTERFACE_CONFIG
-echo "interfaceConfig.DEFAULT_WELCOME_PAGE_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
+if [[ ! -z "${JitsiInterfaceBrandWatermark}" ]]; then
+    echo "interfaceConfig.DEFAULT_WELCOME_PAGE_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
+fi
 echo "interfaceConfig.NATIVE_APP_NAME = '${JitsiInterfaceNativeAppName}';" >>  $INTERFACE_CONFIG
 echo "interfaceConfig.SHOW_BRAND_WATERMARK = ${JitsiInterfaceShowBrandWatermark};" >> $INTERFACE_CONFIG
 echo "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS = ${JitsiInterfaceShowWatermarkForGuests};" >> $INTERFACE_CONFIG
@@ -203,7 +250,7 @@ echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" 
 systemctl restart apache2
 
 
-cat << EOF > /etc/jitsi/jibri/jibri_setup.lua
+cat << EOF > /etc/prosody/conf.d/jibri_setup.lua
 ## Setup Jibri config 
 plugin_paths = { "/usr/share/jitsi-meet/prosody-plugins/" }
 
@@ -310,12 +357,12 @@ Component "lobby.${JitsiHostname}" "muc"
     muc_room_locking = false
     muc_room_default_public_jids = true
 EOF
-cp "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua" "/etc/jitsi/jibri/${JitsiHostname}.old.cfg.lua"
-mv "/etc/jitsi/jibri/jibri_setup.lua" "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua"
+cp "/etc/prosody/conf.d/${JitsiHostname}.cfg.lua" "/etc/prosody/conf.d/${JitsiHostname}.old.cfg.lua"
+mv "/etc/prosody/conf.d/jibri_setup.lua" "/etc/prosody/conf.d/${JitsiHostname}.cfg.lua"
 
 
-prosodyctl register jibri "auth.${JitsiHostname}" "${JibriAuthPass}"
-prosodyctl register recorder "recorder.${JitsiHostname}" "${JibriRecorderPass}"
+prosodyctl register jibri "auth.${JitsiHostname}" "${!SECRET_AUTH_PASS}"
+prosodyctl register recorder "recorder.${JitsiHostname}" "${!SECRET_RECORDER_PASS}"
 
 # Update SIP communicator
 echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${JitsiHostname}\r\norg.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties

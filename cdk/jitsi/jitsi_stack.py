@@ -217,18 +217,6 @@ class JitsiStack(core.Stack):
 
         # secrets manager
 
-        secret = aws_secretsmanager.CfnSecret(
-            self,
-            "Secret",
-            generate_secret_string=aws_secretsmanager.CfnSecret.GenerateSecretStringProperty(
-                exclude_characters="\"@/\\\"'$,[]*?{}~\#%<>|^",
-                exclude_punctuation=True,
-                generate_string_key="password",
-                secret_string_template=json.dumps({"username":"dbadmin"})
-            ),
-            name="{}/wordpress/secret".format(core.Aws.STACK_NAME)
-        )
-        secret.cfn_options.condition = secret_arn_not_exists_condition
         config_secrets = [
             'JIBRI_AUTH_PASS',
             'JIBRI_RECORDER_PASS'
@@ -319,13 +307,6 @@ class JitsiStack(core.Stack):
                                 ],
                                 resources=[
                                     system_log_group.attr_arn,
-                                    core.Token.as_string(
-                                        core.Fn.condition_if(
-                                            secret_arn_exists_condition.logical_id,
-                                            secret_arn_param.value_as_string,
-                                            secret.ref
-                                        )
-                                    ),
                                     # TODO: could this be done without repeating the list?
                                     config_secret_constructs['JIBRI_AUTH_PASS'].ref,
                                     config_secret_constructs['JIBRI_RECORDER_PASS'].ref
@@ -411,13 +392,6 @@ class JitsiStack(core.Stack):
                             "JibriAuthPass": JIBRI_AUTH_PASS,
                             "JibriRecorderPass":  JIBRI_RECORDER_PASS,
                             "LetsEncryptCertificateEmail": notification_email_param.value_as_string,
-                            "SecretArn": core.Token.as_string(
-                                core.Fn.condition_if(
-                                    secret_arn_exists_condition.logical_id,
-                                    secret_arn_param.value_as_string,
-                                    secret.ref
-                                )
-                            ),
                             "Prefix": "{}/jitsi/secret".format(core.Aws.STACK_NAME)
                         }
                     )
@@ -623,13 +597,6 @@ class JitsiStack(core.Stack):
                                 ],
                                 resources=[
                                     system_log_group_2.attr_arn,
-                                    core.Token.as_string(
-                                        core.Fn.condition_if(
-                                            secret_arn_exists_condition.logical_id,
-                                            secret_arn_param.value_as_string,
-                                            secret.ref
-                                        )
-                                    ),
                                     # TODO: could this be done without repeating the list?
                                     config_secret_constructs['JIBRI_AUTH_PASS'].ref,
                                     config_secret_constructs['JIBRI_RECORDER_PASS'].ref
@@ -709,13 +676,6 @@ class JitsiStack(core.Stack):
                             "JibriAuthPass": JIBRI_AUTH_PASS,
                             "JibriRecorderPass":  JIBRI_RECORDER_PASS,
                             "JitsiPublicIP": eip.ref,
-                            "SecretArn": core.Token.as_string(
-                                core.Fn.condition_if(
-                                    secret_arn_exists_condition.logical_id,
-                                    secret_arn_param.value_as_string,
-                                    secret.ref
-                                )
-                            ),
                             "Prefix": "{}/jitsi/secret".format(core.Aws.STACK_NAME)
                         }
                     )

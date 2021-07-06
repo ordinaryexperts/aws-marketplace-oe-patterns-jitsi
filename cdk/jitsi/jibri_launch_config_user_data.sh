@@ -117,50 +117,78 @@ systemctl enable amazon-cloudwatch-agent
 systemctl start amazon-cloudwatch-agent
 
 
+mkdir -p /opt/oe/patterns/jitsi
 # secretsmanager
 SECRET_ARN="${SecretArn}"
-mkdir -p /opt/oe/patterns/jitsi/
-echo $SECRET_ARN >> /opt/oe/patterns/jitsi/secret-arn.txt
+PREFIX="${Prefix}"
+SECRET_ARN="${SecretArn}"
+AUTH_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
+RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
+AUTH_VAL=`aws secretsmanager get-secret-value --secret-id $AUTH_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
+RECORDER_VAL=`aws secretsmanager get-secret-value --secret-id $RECORDER_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
 
-SECRET_NAME=$(aws secretsmanager list-secrets --query "SecretList[?ARN=='$SECRET_ARN'].Name" --output text)
-echo $SECRET_NAME >> /opt/oe/patterns/jitsi/secret-name.txt
-
-SECRET_KEY="${!PREFIX}_JIBRI_AUTH_PASS"
-SECRET_RECORDER_KEY="${!PREFIX}_JIBRI_RECORDER_PASS"
-SECRET_AUTH_PASS=$(aws secretsmanager get-secret-value --secret-id ${!SECRET_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`)
-SECRET_RECORDER_PASS=$(aws secretsmanager get-secret-value --secret-id ${!SECRET_RECORDER_KEY} | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`)
-
-aws ssm get-parameter \
-    --name "/aws/reference/secretsmanager/$SECRET_NAME" \
-    --with-decryption \
-    --query Parameter.Value \
-| jq -r . >> /opt/oe/patterns/jitsi/secret.json
 #
 # Jibri configuration
 #
+apt -y install linux-image-extra-virtual
+ufw status
+=> “Active or inactive does not matter”
+ufw allow ssh
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw allow 10000:60000/tcp
+ufw allow 10000:60000/udp
+ufw allow 5222
+ufw allow 5347
+apt -y install linux-image-extra-virtual
+sed /GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/ /etc/default/grub
+sed -e 's/GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/g' /etc/default/grub >> /etc/default/grub_new
+mv /etc/default/grub_new /etc/default/grub
 
+update-grub
+
+echo "snd-aloop" >> /etc/modules 
+
+curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
+echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+apt-get -y update
+apt-get -y install google-chrome-stable
+
+CHROME_DRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`
+wget -N http://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip -P ~/
+unzip ~/chromedriver_linux64.zip -d ~/
+rm ~/chromedriver_linux64.zip
+sudo mv -f ~/chromedriver /usr/local/bin/chromedriver
+sudo chown root:root /usr/local/bin/chromedriver
+sudo chmod 0755 /usr/local/bin/chromedriver
+
+apt-get -y install default-jre-headless ffmpeg curl alsa-utils icewm xdotool xserver-xorg-input-void xserver-xorg-video-dummy
+
+
+# Install Jibri
+wget -qO - https://download.jitsi.org/jitsi-key.gpg.key | sudo apt-key add - 
+sudo sh -c "echo 'deb https://download.jitsi.org stable/' > /etc/apt/sources.list.d/jitsi-stable.list"
+sudo apt-get -y update 
+sudo apt-get -y install jibri    
+
+mkdir /srv/recordings
+chown jibri:jitsi /srv/recordings
 ## Write custom config
 cp /etc/jitsi/jibri/jibri.conf /etc/jitsi/jibri/jibri.conf.old
 cat << EOF > /etc/jitsi/jibri/jibri.conf
 jibri {
-      recording {
-        recordings-directory = "/srv/recordings"
-      }
-      api { 
-        http {
-            internal-api-port = 8001
-            external-api-port = 8002
-        }
+      api {
         xmpp {
             environments = [
                 {
-                  name = "main"
-                  xmpp_server_hosts = [ "${JitsiHostname}" ]
+                  xmpp_server_hosts = [
+                    "${JitsiHostname}"
+                  ]
                   xmpp_domain = "${JitsiHostname}"
                   control_login {
                     domain = "auth.${JitsiHostname}",
                     username = "jibri",
-                    password ="${!SECRET_AUTH_PASS}"
+                    password ="${JibriAuthPass}"
                   }
                   control_muc {
                       domain = "internal.auth.${JitsiHostname}",
@@ -170,7 +198,7 @@ jibri {
                   call_login {
                       domain = "recorder.${JitsiHostname}",
                       username = "recorder",
-                      password = "${!SECRET_RECORDER_PASS}"
+                      password = "${JibriRecorderPass}"
                   }
                 }
             ]
@@ -179,14 +207,13 @@ jibri {
 }
 EOF
 
-
-
-systemctl enable jibri
 systemctl restart jibri   
-success=$?
+systemctl status jibri 
 #
 # cloudformation signal
 #
+sudo usermod -aG adm,audio,video,plugdev jibri 
+
 
 cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JibriAsg --region ${AWS::Region}
 
