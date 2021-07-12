@@ -130,7 +130,7 @@ RECORDER_VAL=`aws secretsmanager get-secret-value --secret-id $RECORDER_KEY | jq
 #
 # Jibri configuration
 #
-apt -y install linux-image-extra-virtual
+apt-get -y install linux-image-extra-virtual
 ufw status
 => “Active or inactive does not matter”
 ufw allow ssh
@@ -140,7 +140,7 @@ ufw allow 10000:60000/tcp
 ufw allow 10000:60000/udp
 ufw allow 5222
 ufw allow 5347
-apt -y install linux-image-extra-virtual
+apt-get -y install linux-image-extra-virtual
 sed /GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/ /etc/default/grub
 sed -e 's/GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/g' /etc/default/grub >> /etc/default/grub_new
 mv /etc/default/grub_new /etc/default/grub
@@ -158,18 +158,17 @@ CHROME_DRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEA
 wget -N http://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip -P ~/
 unzip ~/chromedriver_linux64.zip -d ~/
 rm ~/chromedriver_linux64.zip
-sudo mv -f ~/chromedriver /usr/local/bin/chromedriver
-sudo chown root:root /usr/local/bin/chromedriver
-sudo chmod 0755 /usr/local/bin/chromedriver
+mv -f ~/chromedriver /usr/local/bin/chromedriver
+chown root:root /usr/local/bin/chromedriver
+chmod 0755 /usr/local/bin/chromedriver
 
 apt-get -y install default-jre-headless ffmpeg curl alsa-utils icewm xdotool xserver-xorg-input-void xserver-xorg-video-dummy
 
-
 # Install Jibri
-wget -qO - https://download.jitsi.org/jitsi-key.gpg.key | sudo apt-key add - 
-sudo sh -c "echo 'deb https://download.jitsi.org stable/' > /etc/apt/sources.list.d/jitsi-stable.list"
-sudo apt-get -y update 
-sudo apt-get -y install jibri    
+wget -qO - https://download.jitsi.org/jitsi-key.gpg.key | apt-key add -
+sh -c "echo 'deb https://download.jitsi.org stable/' > /etc/apt/sources.list.d/jitsi-stable.list"
+apt-get -y update
+apt-get -y install jibri
 
 mkdir /srv/recordings
 chown jibri:jitsi /srv/recordings
@@ -207,15 +206,12 @@ jibri {
 }
 EOF
 
+usermod -aG adm,audio,video,plugdev jibri
+
 systemctl restart jibri   
-systemctl status jibri 
+success=$?
+
 #
 # cloudformation signal
 #
-sudo usermod -aG adm,audio,video,plugdev jibri 
-
-
 cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JibriAsg --region ${AWS::Region}
-
-# Reboot Jibri instance
-# reboot

@@ -128,10 +128,9 @@ echo "jitsi-videobridge2 jitsi-videobridge/jvb-hostname string ${JitsiHostname}"
 echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)" | debconf-set-selections
 
 # jitsi-meet was downloaded but not installed during AMI build...
-#dpkg -i /root/jitsi-debs/lib*.deb
 dpkg -i /root/jitsi-debs/lua*.deb
+dpkg -i /root/jitsi-debs/ruby*.deb
 dpkg -i /root/jitsi-debs/prosody*.deb
-#dpkg -i /root/jitsi-debs/uuid*.deb
 dpkg -i /root/jitsi-debs/jitsi-videobridge*.deb
 dpkg -i /root/jitsi-debs/ji*.deb
 
@@ -177,12 +176,9 @@ echo "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS = ${JitsiInterfaceShowWatermarkF
 echo "interfaceConfig.TOOLBAR_BUTTONS = [ 'microphone', 'camera', 'closedcaptions', 'desktop', 'embedmeeting', 'fullscreen', 'fodeviceselection', 'hangup', 'profile', 'chat', 'etherpad', 'sharedvideo', 'settings', 'raisehand', 'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts', 'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone', 'security' ];" >> $INTERFACE_CONFIG
 echo "interfaceConfig.fileRecordingsEnabled = true;" >> $INTERFACE_CONFIG
 
-
 CONFIG=/usr/share/jitsi-meet/config.js
 cp $CONFIG $CONFIG.default
 echo "config.liveStreamingEnabled = true;" >> $CONFIG
-echo "config.liveStreamingEnabled = true;" >> $CONFIG
-
 
 # brand watermark image
 JITSI_BRAND_WATERMARK=${JitsiInterfaceBrandWatermark}
@@ -200,7 +196,6 @@ then
 fi
 echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" >> $INTERFACE_CONFIG
 systemctl restart apache2
-
 
 cat << EOF > /etc/jitsi/jibri/jibri_setup.lua
 ## Setup Jibri config 
@@ -312,12 +307,12 @@ EOF
 cp "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua" "/etc/jitsi/jibri/${JitsiHostname}.old.cfg.lua"
 mv "/etc/jitsi/jibri/jibri_setup.lua" "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua"
 
-
 prosodyctl register jibri "auth.${JitsiHostname}" "${JibriAuthPass}"
 prosodyctl register recorder "recorder.${JitsiHostname}" "${JibriRecorderPass}"
 
 # Update SIP communicator
 echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${JitsiHostname}\r\norg.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties
+
 #
 # associate EIP
 #

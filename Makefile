@@ -6,6 +6,7 @@ update-common:
 deploy: build
 	docker-compose run -w /code/cdk --rm devenv cdk deploy \
 	--require-approval never \
+	--parameters EnableDebugging=true \
 	--parameters IngressCidrBlock=0.0.0.0/0 \
 	--parameters JitsiHostname=oe-patterns-jitsi-${USER}.dev.patterns.ordinaryexperts.com \
 	--parameters JitsiInterfaceAppName="Ordinary Experts Meet" \
