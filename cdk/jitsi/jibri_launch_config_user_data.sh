@@ -116,7 +116,6 @@ EOF
 systemctl enable amazon-cloudwatch-agent
 systemctl start amazon-cloudwatch-agent
 
-
 mkdir -p /opt/oe/patterns/jitsi
 # secretsmanager
 SECRET_ARN="${SecretArn}"
@@ -127,51 +126,6 @@ RECORDER_KEY="${Prefix}_JIBRI_RECORDER_PASS"
 AUTH_VAL=`aws secretsmanager get-secret-value --secret-id $AUTH_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
 RECORDER_VAL=`aws secretsmanager get-secret-value --secret-id $RECORDER_KEY | jq '.SecretString | fromjson | .value' | sed "s/\"/'/g"`
 
-#
-# Jibri configuration
-#
-apt-get -y install linux-image-extra-virtual
-ufw status
-=> “Active or inactive does not matter”
-ufw allow ssh
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw allow 10000:60000/tcp
-ufw allow 10000:60000/udp
-ufw allow 5222
-ufw allow 5347
-apt-get -y install linux-image-extra-virtual
-sed /GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/ /etc/default/grub
-sed -e 's/GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/g' /etc/default/grub >> /etc/default/grub_new
-mv /etc/default/grub_new /etc/default/grub
-
-update-grub
-
-echo "snd-aloop" >> /etc/modules 
-
-curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
-echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
-apt-get -y update
-apt-get -y install google-chrome-stable
-
-CHROME_DRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`
-wget -N http://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip -P ~/
-unzip ~/chromedriver_linux64.zip -d ~/
-rm ~/chromedriver_linux64.zip
-mv -f ~/chromedriver /usr/local/bin/chromedriver
-chown root:root /usr/local/bin/chromedriver
-chmod 0755 /usr/local/bin/chromedriver
-
-apt-get -y install default-jre-headless ffmpeg curl alsa-utils icewm xdotool xserver-xorg-input-void xserver-xorg-video-dummy
-
-# Install Jibri
-wget -qO - https://download.jitsi.org/jitsi-key.gpg.key | apt-key add -
-sh -c "echo 'deb https://download.jitsi.org stable/' > /etc/apt/sources.list.d/jitsi-stable.list"
-apt-get -y update
-apt-get -y install jibri
-
-mkdir /srv/recordings
-chown jibri:jitsi /srv/recordings
 ## Write custom config
 cp /etc/jitsi/jibri/jibri.conf /etc/jitsi/jibri/jibri.conf.old
 cat << EOF > /etc/jitsi/jibri/jibri.conf
@@ -206,9 +160,10 @@ jibri {
 }
 EOF
 
-usermod -aG adm,audio,video,plugdev jibri
+systemctl enable jibri
+systemctl start jibri
 
-systemctl restart jibri   
+echo 'hi'
 success=$?
 
 #

@@ -65,23 +65,12 @@ mv /var/cache/apt/archives/*.deb /root/jitsi-debs
 #
 # Jibri install
 #
-apt-get -y install linux-image-extra-virtual
-ufw status
-ufw allow ssh
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw allow 10000:60000/tcp
-ufw allow 10000:60000/udp
-ufw allow 5222
-ufw allow 5347
-apt-get -y install linux-image-extra-virtual
-sed /GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/ /etc/default/grub
-sed -e 's/GRUB_DEFAULT=0/GRUB_DEFAULT="1>2"/g' /etc/default/grub >> /etc/default/grub_new
-curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASEmv /etc/default/grub_new /etc/default/grub
-
+# https://github.com/jitsi/jibri/issues/104#issue-322183843
+DEBIAN_FRONTEND=noninteractive apt-get -y install linux-aws-lts-18.04 linux-image-extra-virtual
+sed -i 's/GRUB_DEFAULT=0/GRUB_DEFAULT="1>4"/g' /etc/default/grub
 update-grub
 
-echo "snd-aloop" >> /etc/modules 
+echo "snd-aloop" >> /etc/modules
 
 curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
 echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
@@ -99,7 +88,6 @@ chmod 0755 /usr/local/bin/chromedriver
 
 apt-get -y install default-jre-headless ffmpeg curl alsa-utils icewm xdotool xserver-xorg-input-void xserver-xorg-video-dummy
 
-
 # Install Jibri
 JIBRI_VERSION='8.0-93-g51fe7a2-1'
 apt-get -y update
@@ -109,7 +97,11 @@ mkdir /srv/recordings
 chown jibri:jitsi /srv/recordings
 usermod -aG adm,audio,video,plugdev jibri
 
-# not configuring firewall with ufw in favor of AWS security groups
+# disable Jibri service so the AMI
+# can be configured before we start it.
+# we will reenable the service in the user data script
+# 
+systemctl disable jibri
 
 #
 # AMI hardening
@@ -175,10 +167,3 @@ apt-get -y update
 
 # https://aws.amazon.com/articles/how-to-share-and-use-public-amis-in-a-secure-manner/
 find / -name "authorized_keys" -exec rm -f {} \;
-
-# disable Jibri service so the AMI
-# can be configured before we start it.
-# we will reenable the service in the user data script
-# 
-
-systemctl disable jibri
