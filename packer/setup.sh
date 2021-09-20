@@ -45,14 +45,20 @@ cd -
 #
 
 # Pin down a specific version
-# as of 2021-04-16, this is the latest stable release
-VERSION='2.0.5765-1'
-apt-get -y install apache2 debconf-utils gnupg2
+# as of 2021-09-20, this is the latest stable release
+# https://jitsi.org/blog/jitsi-meet-stable-releases-now-more-discoverable/
+VERSION='2.0.6293-1'
+apt-get -y install apache2 debconf-utils gnupg2 uuid-runtime
 apt install apt-transport-https
 
 # disable default site
 a2dissite 000-default
 
+# prosody 0.11
+wget https://prosody.im/files/prosody-debian-packages.key -O- | apt-key add -
+echo deb http://packages.prosody.im/debian $(lsb_release -sc) main | tee -a /etc/apt/sources.list.d/prosody-dev.list > /dev/null
+
+# jitsi
 curl https://download.jitsi.org/jitsi-key.gpg.key | gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg
 echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
 apt-get update
