@@ -47,6 +47,7 @@ cd -
 # Pin down a specific version
 # as of 2021-09-20, this is the latest stable release
 # https://jitsi.org/blog/jitsi-meet-stable-releases-now-more-discoverable/
+# apt-cache madison jitsi-meet
 VERSION='2.0.6293-1'
 apt-get -y install apache2 debconf-utils gnupg2 uuid-runtime
 apt install apt-transport-https
