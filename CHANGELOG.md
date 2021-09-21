@@ -1,6 +1,6 @@
 # Unreleased
 
-* Upgrading to Jitsi version 2.0.5765-1
+* Upgrading to Jitsi version 2.0.6293-1
 * Moving to common Makefile
 * Upgrading VPC common library (changes parameter names)
 * Disabling recording and live stream buttons
