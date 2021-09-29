@@ -1,6 +1,6 @@
 version: '3'
 services:
-  jitsi:
+  devenv:
     build: .
     volumes:
     - .:/code
@@ -13,6 +13,7 @@ services:
       - AWS_REGION
       - AWS_SECRET_ACCESS_KEY
       - AWS_SESSION_TOKEN
+      - TEMPLATE_VERSION
       - USER
   ami:
     build: ./packer

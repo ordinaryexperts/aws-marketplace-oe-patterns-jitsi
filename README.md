@@ -13,7 +13,7 @@ The Ordinary Experts Jitsi Pattern is an open-source AWS CloudFormation template
 For this pattern to work, you must first:
 
 1. Have an AWS Route 53 Hosted Zone configured and delegated
-1. Have at least 1 available EIP (or at least 3 available EIPs if not using your own VPC)
+1. Have at least 1 available EIP (or at least 2 available EIPs if not using your own VPC)
 
 After that you can just launch the CloudFormation stack and fill out the required parameters.
 
@@ -23,7 +23,7 @@ See the [Ordinary Experts AWS Marketplace Product Page](https://ordinaryexperts.
 
 * Ubuntu 18.04.4 LTS
 * Apache 2.4.29
-* Jitsi version 2.0.4966-1
+* Jitsi version 2.0.6293-1
 
 The AWS stack uses Amazon Elastic Compute Cloud (Amazon EC2), Amazon Virtual Public Cloud (Amazon VPC), Amazon CloudWatch and Amazon Route 53.
 

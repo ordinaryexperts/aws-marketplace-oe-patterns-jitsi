@@ -1,5 +1,13 @@
 # Unreleased
 
+2.0.0
+-----
+* Upgrading to Jitsi version 2.0.6293-1
+* Moving to common Makefile
+* Upgrading VPC common library (changes parameter names)
+* Disabling recording and live stream buttons
+* Disable default apache site
+
 1.0.4
 -----
 * Fixing `make deploy` command

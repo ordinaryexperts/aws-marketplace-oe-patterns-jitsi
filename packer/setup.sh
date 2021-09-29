@@ -44,14 +44,28 @@ cd -
 #  * https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart
 #
 
-apt-get -y install apache2 debconf-utils gnupg2
+# Pin down a specific version
+# as of 2021-09-20, this is the latest stable release
+# https://jitsi.org/blog/jitsi-meet-stable-releases-now-more-discoverable/
+# apt-cache madison jitsi-meet
+VERSION='2.0.6293-1'
+apt-get -y install apache2 debconf-utils gnupg2 uuid-runtime
 apt install apt-transport-https
 
+# disable default site
+a2dissite 000-default
+
+# prosody 0.11
+wget https://prosody.im/files/prosody-debian-packages.key -O- | apt-key add -
+echo deb http://packages.prosody.im/debian $(lsb_release -sc) main | tee -a /etc/apt/sources.list.d/prosody-dev.list > /dev/null
+
+# jitsi
 curl https://download.jitsi.org/jitsi-key.gpg.key | gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg
 echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
 apt-get update
 rm -rf /var/cache/apt/archives/*.deb
-apt-get -y install --download-only jitsi-meet
+apt-get -y install --download-only jitsi-meet=${VERSION}
+
 mkdir /root/jitsi-debs
 mv /var/cache/apt/archives/*.deb /root/jitsi-debs
 
