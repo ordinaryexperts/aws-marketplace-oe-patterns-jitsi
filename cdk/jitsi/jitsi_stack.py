@@ -575,163 +575,163 @@ class JitsiStack(core.Stack):
             }
         }
         # cloudwatch jibri
-        jibri_log_group = aws_logs.CfnLogGroup(
-            self,
-            "JibriAppLogGroup",
-            retention_in_days=TWO_YEARS_IN_DAYS
-        )
-        jibri_log_group.cfn_options.update_replace_policy = core.CfnDeletionPolicy.RETAIN
-        jibri_log_group.cfn_options.deletion_policy = core.CfnDeletionPolicy.RETAIN
-        system_log_group_2 = aws_logs.CfnLogGroup(
-            self,
-            "JibriSystemLogGroup",
-            retention_in_days=TWO_YEARS_IN_DAYS
-        )
-        system_log_group_2.cfn_options.update_replace_policy = core.CfnDeletionPolicy.RETAIN
-        system_log_group_2.cfn_options.deletion_policy = core.CfnDeletionPolicy.RETAIN
-        # iam for jibri
-        iam_jibri_instance_role = aws_iam.CfnRole(
-            self,
-            "jibriInstanceRole",
-            assume_role_policy_document=aws_iam.PolicyDocument(
-                statements=[
-                    aws_iam.PolicyStatement(
-                        effect=aws_iam.Effect.ALLOW,
-                        actions=[ "sts:AssumeRole" ],
-                        principals=[ aws_iam.ServicePrincipal("ec2.amazonaws.com") ]
-                    )
-                ]
-            ),
-            policies=[
-                aws_iam.CfnRole.PolicyProperty(
-                    policy_document=aws_iam.PolicyDocument(
-                        statements=[
-                            aws_iam.PolicyStatement(
-                                effect=aws_iam.Effect.ALLOW,
-                                actions=[
-                                    "logs:CreateLogStream",
-                                    "logs:DescribeLogStreams",
-                                    "logs:PutLogEvents"
-                                ],
-                                resources=[
-                                    system_log_group_2.attr_arn,
-                                    # TODO: could this be done without repeating the list?
-                                    config_secret_constructs['JIBRI_AUTH_PASS'].ref,
-                                    config_secret_constructs['JIBRI_RECORDER_PASS'].ref
-                                ]
-                            )
-                        ]
-                    ),
-                    policy_name="AllowStreamLogsToCloudWatch"
-                ),
-                aws_iam.CfnRole.PolicyProperty(
-                    policy_document=aws_iam.PolicyDocument(
-                        statements=[
-                            aws_iam.PolicyStatement(
-                                effect=aws_iam.Effect.ALLOW,
-                                actions=[
-                                    "ec2:AssociateAddress",
-                                    "ec2:DescribeVolumes",
-                                    "ec2:DescribeTags",
-                                    "cloudwatch:GetMetricStatistics",
-                                    "cloudwatch:ListMetrics",
-                                    "cloudwatch:PutMetricData"
-                                ],
-                                resources=[ "*" ]
-                            )
-                        ]
-                    ),
-                    policy_name="AllowStreamMetricsToCloudWatch"
-                ),
-                aws_iam.CfnRole.PolicyProperty(
-                    policy_document=aws_iam.PolicyDocument(
-                        statements=[
-                            aws_iam.PolicyStatement(
-                                effect=aws_iam.Effect.ALLOW,
-                                actions=[ "autoscaling:Describe*" ],
-                                resources=[ "*" ]
-                            )
-                        ]
-                    ),
-                    policy_name="AllowDescribeAutoScaling"
-                ),
-            ],
-            managed_policy_arns=[
-                "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-            ]
-        )
-        # ec2 for Jibri
-
-
-
-        jitsi_sg_2 = aws_ec2.CfnSecurityGroup(
-            self,
-            "JibriSg",
-            group_description="Jibri security group",
-            vpc_id=vpc.id()
-        )
-
-        ec2_instance_profile = aws_iam.CfnInstanceProfile(
-	    self,
-	    "JibriInstanceProfile",
-            roles=[ iam_jibri_instance_role.ref ]
-        )
-        with open("jitsi/jibri_launch_config_user_data.sh") as f:
-            jibri_launch_config_user_data = f.read()
-        ec2_launch_config = aws_autoscaling.CfnLaunchConfiguration(
-            self,
-            "JibriLaunchConfig",
-            image_id=core.Fn.find_in_map("AWSAMIRegionMap", core.Aws.REGION, "OEJITSI"),
-            instance_type=ec2_instance_type_param.value_as_string,
-            iam_instance_profile=ec2_instance_profile.ref,
-            security_groups=[ jitsi_sg_2.ref ],
-            user_data=(
-                core.Fn.base64(
-                    core.Fn.sub(
-                        jibri_launch_config_user_data,
-                        {
-                            "JitsiHostname": jitsi_hostname_param.value_as_string,
-                            "JibriAuthPass": JIBRI_AUTH_PASS,
-                            "JibriRecorderPass":  JIBRI_RECORDER_PASS,
-                            "JitsiPublicIP": eip.ref,
-                            "Prefix": "{}/jitsi/secret".format(core.Aws.STACK_NAME)
-                        }
-                    )
-                )
-            )
-        )
-
-        # autoscaling
-        asg_jibri = aws_autoscaling.CfnAutoScalingGroup(
-            self,
-            "JibriAsg",
-            launch_configuration_name=ec2_launch_config.ref,
-            desired_capacity="1",
-            max_size="1",
-            min_size="1",
-            vpc_zone_identifier=vpc.public_subnet_ids()
-        )
-        asg_jibri.cfn_options.creation_policy=core.CfnCreationPolicy(
-            resource_signal=core.CfnResourceSignal(
-                count=core.Token.as_number(
-                    core.Fn.condition_if(
-                        enable_debugging_condition.logical_id,
-                        0,
-                        1
-                    )
-                ),
-                timeout="PT15M"
-            )
-        )
-        asg_jibri.cfn_options.update_policy=core.CfnUpdatePolicy(
-            auto_scaling_rolling_update=core.CfnAutoScalingRollingUpdate(
-                max_batch_size=1,
-                min_instances_in_service=0,
-                pause_time="PT15M",
-                wait_on_resource_signals=True
-            )
-        )
-        core.Tag.add(asg_jibri, "Name", "{}/JibriAsg".format(core.Aws.STACK_NAME))
+#         jibri_log_group = aws_logs.CfnLogGroup(
+#             self,
+#             "JibriAppLogGroup",
+#             retention_in_days=TWO_YEARS_IN_DAYS
+#         )
+#         jibri_log_group.cfn_options.update_replace_policy = core.CfnDeletionPolicy.RETAIN
+#         jibri_log_group.cfn_options.deletion_policy = core.CfnDeletionPolicy.RETAIN
+#         system_log_group_2 = aws_logs.CfnLogGroup(
+#             self,
+#             "JibriSystemLogGroup",
+#             retention_in_days=TWO_YEARS_IN_DAYS
+#         )
+#         system_log_group_2.cfn_options.update_replace_policy = core.CfnDeletionPolicy.RETAIN
+#         system_log_group_2.cfn_options.deletion_policy = core.CfnDeletionPolicy.RETAIN
+#         # iam for jibri
+#         iam_jibri_instance_role = aws_iam.CfnRole(
+#             self,
+#             "jibriInstanceRole",
+#             assume_role_policy_document=aws_iam.PolicyDocument(
+#                 statements=[
+#                     aws_iam.PolicyStatement(
+#                         effect=aws_iam.Effect.ALLOW,
+#                         actions=[ "sts:AssumeRole" ],
+#                         principals=[ aws_iam.ServicePrincipal("ec2.amazonaws.com") ]
+#                     )
+#                 ]
+#             ),
+#             policies=[
+#                 aws_iam.CfnRole.PolicyProperty(
+#                     policy_document=aws_iam.PolicyDocument(
+#                         statements=[
+#                             aws_iam.PolicyStatement(
+#                                 effect=aws_iam.Effect.ALLOW,
+#                                 actions=[
+#                                     "logs:CreateLogStream",
+#                                     "logs:DescribeLogStreams",
+#                                     "logs:PutLogEvents"
+#                                 ],
+#                                 resources=[
+#                                     system_log_group_2.attr_arn,
+#                                     # TODO: could this be done without repeating the list?
+#                                     config_secret_constructs['JIBRI_AUTH_PASS'].ref,
+#                                     config_secret_constructs['JIBRI_RECORDER_PASS'].ref
+#                                 ]
+#                             )
+#                         ]
+#                     ),
+#                     policy_name="AllowStreamLogsToCloudWatch"
+#                 ),
+#                 aws_iam.CfnRole.PolicyProperty(
+#                     policy_document=aws_iam.PolicyDocument(
+#                         statements=[
+#                             aws_iam.PolicyStatement(
+#                                 effect=aws_iam.Effect.ALLOW,
+#                                 actions=[
+#                                     "ec2:AssociateAddress",
+#                                     "ec2:DescribeVolumes",
+#                                     "ec2:DescribeTags",
+#                                     "cloudwatch:GetMetricStatistics",
+#                                     "cloudwatch:ListMetrics",
+#                                     "cloudwatch:PutMetricData"
+#                                 ],
+#                                 resources=[ "*" ]
+#                             )
+#                         ]
+#                     ),
+#                     policy_name="AllowStreamMetricsToCloudWatch"
+#                 ),
+#                 aws_iam.CfnRole.PolicyProperty(
+#                     policy_document=aws_iam.PolicyDocument(
+#                         statements=[
+#                             aws_iam.PolicyStatement(
+#                                 effect=aws_iam.Effect.ALLOW,
+#                                 actions=[ "autoscaling:Describe*" ],
+#                                 resources=[ "*" ]
+#                             )
+#                         ]
+#                     ),
+#                     policy_name="AllowDescribeAutoScaling"
+#                 ),
+#             ],
+#             managed_policy_arns=[
+#                 "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+#             ]
+#         )
+#         # ec2 for Jibri
+#
+#
+#
+#         jitsi_sg_2 = aws_ec2.CfnSecurityGroup(
+#             self,
+#             "JibriSg",
+#             group_description="Jibri security group",
+#             vpc_id=vpc.id()
+#         )
+#
+#         ec2_instance_profile = aws_iam.CfnInstanceProfile(
+# 	    self,
+# 	    "JibriInstanceProfile",
+#             roles=[ iam_jibri_instance_role.ref ]
+#         )
+#         with open("jitsi/jibri_launch_config_user_data.sh") as f:
+#             jibri_launch_config_user_data = f.read()
+#         ec2_launch_config = aws_autoscaling.CfnLaunchConfiguration(
+#             self,
+#             "JibriLaunchConfig",
+#             image_id=core.Fn.find_in_map("AWSAMIRegionMap", core.Aws.REGION, "OEJITSI"),
+#             instance_type=ec2_instance_type_param.value_as_string,
+#             iam_instance_profile=ec2_instance_profile.ref,
+#             security_groups=[ jitsi_sg_2.ref ],
+#             user_data=(
+#                 core.Fn.base64(
+#                     core.Fn.sub(
+#                         jibri_launch_config_user_data,
+#                         {
+#                             "JitsiHostname": jitsi_hostname_param.value_as_string,
+#                             "JibriAuthPass": JIBRI_AUTH_PASS,
+#                             "JibriRecorderPass":  JIBRI_RECORDER_PASS,
+#                             "JitsiPublicIP": eip.ref,
+#                             "Prefix": "{}/jitsi/secret".format(core.Aws.STACK_NAME)
+#                         }
+#                     )
+#                 )
+#             )
+#         )
+#
+#         # autoscaling
+#         asg_jibri = aws_autoscaling.CfnAutoScalingGroup(
+#             self,
+#             "JibriAsg",
+#             launch_configuration_name=ec2_launch_config.ref,
+#             desired_capacity="1",
+#             max_size="1",
+#             min_size="1",
+#             vpc_zone_identifier=vpc.public_subnet_ids()
+#         )
+#         asg_jibri.cfn_options.creation_policy=core.CfnCreationPolicy(
+#             resource_signal=core.CfnResourceSignal(
+#                 count=core.Token.as_number(
+#                     core.Fn.condition_if(
+#                         enable_debugging_condition.logical_id,
+#                         0,
+#                         1
+#                     )
+#                 ),
+#                 timeout="PT15M"
+#             )
+#         )
+#         asg_jibri.cfn_options.update_policy=core.CfnUpdatePolicy(
+#             auto_scaling_rolling_update=core.CfnAutoScalingRollingUpdate(
+#                 max_batch_size=1,
+#                 min_instances_in_service=0,
+#                 pause_time="PT15M",
+#                 wait_on_resource_signals=True
+#             )
+#         )
+#         core.Tag.add(asg_jibri, "Name", "{}/JibriAsg".format(core.Aws.STACK_NAME))
 
 
 

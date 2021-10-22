@@ -1,22 +1,29 @@
 #!/bin/bash -eux
 
 # wait for cloud-init to be done
+mkdir /root/jitsi-debs
+SCRIPT_LOG=/root/jitsi-debs/script.log
+touch $SCRIPT_LOG
 if [ ! "$IN_DOCKER" = true ]; then
     cloud-init status --wait
 fi
 
 # apt upgrade
+echo "apt upgrade" >> $SCRIPT_LOG
 export DEBIAN_FRONTEND=noninteractive
 apt-get -y update && apt-get -y upgrade
 
 # install helpful utilities
+echo "install helpful utilities" >> $SCRIPT_LOG
 apt-get -y install curl git jq ntp software-properties-common unzip vim wget zip
 
 # install latest CFN utilities
+echo "install latest CFN utilities" >> $SCRIPT_LOG
 apt-get -y install python-pip
 pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
 
 # install aws cli
+echo "install aws cli" >> $SCRIPT_LOG
 cd /tmp
 curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip
 unzip awscliv2.zip
@@ -24,14 +31,17 @@ unzip awscliv2.zip
 cd -
 
 # install CloudWatch agent
+echo "install CloudWatch agent" >> $SCRIPT_LOG
 cd /tmp
 curl https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb -o amazon-cloudwatch-agent.deb
 dpkg -i -E ./amazon-cloudwatch-agent.deb
 cd -
 # collectd for metrics
+echo "collectd for metrics" >> $SCRIPT_LOG
 apt-get -y install collectd
 
 # install CodeDeploy agent - requires ruby
+echo "install CodeDeploy agent - requires ruby" >> $SCRIPT_LOG
 apt-get -y install ruby
 cd /tmp
 curl https://aws-codedeploy-us-west-1.s3.us-west-1.amazonaws.com/latest/install -o install
@@ -46,61 +56,89 @@ cd -
 
 # Pin down a specific version
 # as of 2021-04-16, this is the latest stable release
-JITSI_VERSION='2.0.5963-1'
+#JITSI_VERSION='2.0.5963-1'
+#Installing Jitsi necessary tools
+echo "Installing Jitsi necessary tools" >> $SCRIPT_LOG
 apt-get -y install apache2 debconf-utils gnupg2
 apt-get install apt-transport-https
 
 # disable default site
+echo "disable default site" >> $SCRIPT_LOG
 a2dissite 000-default
 
-curl https://download.jitsi.org/jitsi-key.gpg.key | gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg
-echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
-apt-get update
-rm -rf /var/cache/apt/archives/*.deb
-apt-get -y install --download-only jitsi-meet=${JITSI_VERSION}
+# Adding prosody and jitsi repository
+echo "Adding prosody and jitsi repository" >> $SCRIPT_LOG
+echo "deb http://packages.prosody.im/debian $(lsb_release -sc) main" >> /etc/apt/sources.list
+wget https://prosody.im/files/prosody-debian-packages.key -O- | sudo apt-key add -
+echo 'deb https://download.jitsi.org stable/' >> /etc/apt/sources.list.d/jitsi-stable.list
+wget -qO - https://download.jitsi.org/jitsi-key.gpg.key | sudo apt-key add -
+apt update -y
 
-mkdir /root/jitsi-debs
+# downloading only packages for jitsi not installing
+echo "downloading only packages for jitsi not installing" >> $SCRIPT_LOG
+rm -rf /var/cache/apt/archives/*.deb
+apt-get -y install --download-only jitsi-meet
+#apt-get -y install jitsi-meet
+
+#mkdir /root/jitsi-debs
 mv /var/cache/apt/archives/*.deb /root/jitsi-debs
 
 #
 # Jibri install
 #
 # https://github.com/jitsi/jibri/issues/104#issue-322183843
-DEBIAN_FRONTEND=noninteractive apt-get -y install linux-aws-lts-18.04 linux-image-extra-virtual
-sed -i 's/GRUB_DEFAULT=0/GRUB_DEFAULT="1>4"/g' /etc/default/grub
-update-grub
+#DEBIAN_FRONTEND=noninteractive apt-get -y install linux-aws-lts-18.04 linux-image-extra-virtual
+#sed -i 's/GRUB_DEFAULT=0/GRUB_DEFAULT="1>4"/g' /etc/default/grub
+#update-grub
 
-echo "snd-aloop" >> /etc/modules
+#Changing the kernel to GENERIC
+echo "Changing the kernel to GENERIC" >> $SCRIPT_LOG
+apt-get -y install linux-image-extra-virtual
+GENERIC=`find /boot/ -iname "vmlinuz*generic"`
+./boot-kernel.sh --default $GENERIC
+echo "Finish Changing the kernel to GENERIC" >> $SCRIPT_LOG
+# We need to ensure that after reboot the session is still open
+# reboot
 
-curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
+# Install the required packages that are available from Ubuntu’s default repositories:
+echo "Install the required packages that are available from Ubuntu’s default repositories:" >> $SCRIPT_LOG
+apt install -y ffmpeg curl unzip software-properties-common
+
+# Install Google Chrome:
+echo "Install Google Chrome" >> $SCRIPT_LOG
+curl -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
 echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
-apt-get -y update
-apt-get -y install google-chrome-stable
+apt update
+apt install -y google-chrome-stable
 
-# curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE
-CHROME_DRIVER_VERSION='91.0.4472.101'
+# Install ChromeDriver:
+echo "Install ChromeDriver" >> $SCRIPT_LOG
+CHROME_DRIVER_VERSION=`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`
+#CHROME_DRIVER_VERSION='91.0.4472.101'
 wget -N http://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip -P ~/
 unzip ~/chromedriver_linux64.zip -d ~/
 rm ~/chromedriver_linux64.zip
 mv -f ~/chromedriver /usr/local/bin/chromedriver
-chown root:root /usr/local/bin/chromedriver
 chmod 0755 /usr/local/bin/chromedriver
+chown root:root /usr/local/bin/chromedriver
 
-apt-get -y install default-jre-headless ffmpeg curl alsa-utils icewm xdotool xserver-xorg-input-void xserver-xorg-video-dummy
-
-# Install Jibri
-JIBRI_VERSION='8.0-93-g51fe7a2-1'
+#Install Jibri:
+# apt install -y jibri
+#JIBRI_VERSION='8.0-93-g51fe7a2-1'
 apt-get -y update
-apt-get -y install jibri=${JIBRI_VERSION}
+#apt-get -y install jibri=${JIBRI_VERSION}
+echo "Install Jibri" >> $SCRIPT_LOG
+apt install -y jibri
 
-mkdir /srv/recordings
-chown jibri:jitsi /srv/recordings
+# Add Jibri's user account to the necessary groups:
+echo "Add Jibri's user account to the necessary groups" >> $SCRIPT_LOG
 usermod -aG adm,audio,video,plugdev jibri
 
 # disable Jibri service so the AMI
 # can be configured before we start it.
 # we will reenable the service in the user data script
-# 
+#
+echo "Disabling Jibri" >> $SCRIPT_LOG
 systemctl disable jibri
 
 #

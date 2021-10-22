@@ -152,6 +152,10 @@ systemctl restart jitsi-videobridge2
 
 mkdir -p /opt/oe/patterns/jitsi
 
+# Turn off warnings about scripted control in Chrome:
+mkdir -p /etc/opt/chrome/policies/managed/
+echo '{ "CommandLineFlagSecurityWarningsEnabled": false }' >>/etc/opt/chrome/policies/managed/managed_policies.json
+
 # secretsmanager
 SECRET_ARN="${SecretArn}"
 AUTH_KEY="${Prefix}_JIBRI_AUTH_PASS"
@@ -161,7 +165,6 @@ RECORDER_VAL=`aws secretsmanager get-secret-value --secret-id $RECORDER_KEY | jq
 #
 # customize Jitsi interface
 #
-
 INTERFACE_CONFIG=/usr/share/jitsi-meet/interface_config.js
 JITSI_IMAGE_DIR=/usr/share/jitsi-meet/images
 cp $INTERFACE_CONFIG $INTERFACE_CONFIG.default
@@ -307,11 +310,99 @@ EOF
 cp "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua" "/etc/jitsi/jibri/${JitsiHostname}.old.cfg.lua"
 mv "/etc/jitsi/jibri/jibri_setup.lua" "/etc/jitsi/jibri/${JitsiHostname}.cfg.lua"
 
+### Change from here ###
+# Configure Prosody
+sed -i "s/--Component \"conference.example.com\" \"muc\"/Component \"conference.${JitsiHostname}\" \"muc\"\n--- Store MUC messages in an archive and allow users to access it\nmodules_enabled = { \"muc_mam\" }/g" /etc/prosody/prosody.cfg.lua
+#echo "--- internal muc component, meant to enable pools of jibri and jigasi clients" >> /etc/prosody/prosody.cfg.lua
+#echo "Component \"internal.auth.jitsi.example.com\" \"muc\"" >> /etc/prosody/prosody.cfg.lua
+cat <<EOF >> /etc/prosody/prosody.cfg.lua
+--- internal muc component, meant to enable pools of jibri and jigasi clients
+Component "internal.auth.${JitsiHostname}" "muc"
+modules_enabled = {
+  "ping";
+}
+storage = "internal"
+muc_room_cache_size = 1000
+
+VirtualHost "recorder.${JitsiHostname}"
+modules_enabled = {
+  "ping";
+}
+authentication = "internal_plain"
+EOF
+
+#Create two new accounts for Jibri to use (one for control purposes, one for recording purposes):
 prosodyctl register jibri "auth.${JitsiHostname}" "${JibriAuthPass}"
 prosodyctl register recorder "recorder.${JitsiHostname}" "${JibriRecorderPass}"
 
+#Configure Jicofo
+#Jibri control room and timeout
+echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${JitsiHostname}" >> /etc/jitsi/jicofo/sip-communicator.properties
+echo "org.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties
+
+#Configure Jitsi Meet --> Remove duplicate
+sed -i "s/.*fileRecordingsEnabled.*/fileRecordingsEnabled: true,/g" /etc/jitsi/meet/${JitsiHostname}-config.js
+sed -i "s/.*liveStreamingEnabled.*/liveStreamingEnabled: true,\nhiddenDomain: \"recorder.${JitsiHostname}\",/g" /etc/jitsi/meet/${JitsiHostname}-config.js
+
+#Store recordings and set its permissions appropriately
+mkdir /srv/recordings
+chown jibri:jibri /srv/recordings
+
+#Configure Jibri
+cat <<EOF >> /etc/jitsi/jibri/config.json
+{
+  "recording_directory":"/srv/recordings",
+  "finalize_recording_script_path": "/recordings/put2s3.sh",
+  "xmpp_environments": [
+    {
+      "name": "prod environment",
+      "xmpp_server_hosts": [
+        "${JitsiHostname}"
+      ],
+      "xmpp_domain": "${JitsiHostname}",
+      "control_login": {
+        // The domain to use for logging in
+        "domain": "auth.${JitsiHostname}",
+        // The credentials for logging in
+        "username": "jibri",
+        "password": "${JibriAuthPass}"
+      },
+      "control_muc": {
+        "domain": "internal.${JitsiHostname}",
+        "room_name": "JibriBrewery",
+        "nickname": "jibri"
+      },
+      "call_login": {
+        "domain": "recorder.${JitsiHostname}",
+        "username": "recorder",
+        "password": "${JibriRecorderPass}"
+      },
+      "room_jid_domain_string_to_strip_from_start": "conference.",
+      "usage_timeout": "100"
+    }
+  ]
+}
+EOF
+
+#Install Java 8
+wget -O - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
+add-apt-repository https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+apt update
+apt install -y adoptopenjdk-8-hotspot
+
+#Configure Jibri to start with Java 8 instead of the default Java version (replace the word "java" with the full path to Java 8):
+sed -i "s/exec java/exec \/usr\/lib\/jvm\/adoptopenjdk-8-hotspot-amd64\/bin\/java/g" /opt/jitsi/jibri/launch.sh
+
+#Restart all services, enable and start Jibri
+systemctl restart prosody
+systemctl restart jicofo
+systemctl restart jitsi-videobridge2
+systemctl enable --now jibri
+
+##### until here #######
+
 # Update SIP communicator
-echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${JitsiHostname}\r\norg.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties
+#echo "org.jitsi.jicofo.jibri.BREWERY=JibriBrewery@internal.auth.${JitsiHostname}\r\norg.jitsi.jicofo.jibri.PENDING_TIMEOUT=90" >> /etc/jitsi/jicofo/sip-communicator.properties
 
 #
 # associate EIP
