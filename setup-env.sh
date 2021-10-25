@@ -30,8 +30,12 @@ cd -
 apt-get -y -q install python3 python3-pip
 pip3 install -q taskcat==$TASKCAT_VERSION
 
-# For scripts/gen-pfl.py
-pip3 install -q awspricing pystache
+# For scripts/pfl.py
+pip3 install -q \
+     openpyxl   \
+     pystache   \
+     pyyaml
+
 
 # cdk
 apt-get -y -q install npm
