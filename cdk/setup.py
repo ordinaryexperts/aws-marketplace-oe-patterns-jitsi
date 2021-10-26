@@ -5,7 +5,7 @@ with open("README.md") as fp:
     long_description = fp.read()
 
 
-CDK_VERSION="1.57.0"
+CDK_VERSION="1.87.1"
 
 setuptools.setup(
     name="jitsi",
