@@ -264,6 +264,7 @@ class JitsiStack(core.Stack):
                                     "logs:PutLogEvents"
                                 ],
                                 resources=[
+                                    app_log_group.attr_arn,
                                     system_log_group.attr_arn
                                 ]
                             )
