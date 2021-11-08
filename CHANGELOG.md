@@ -2,6 +2,9 @@
 
 * Upgrade to CDK version 1.87.1
 * Upgrading to Jitsi version 2.0.6433-1
+* Fixing AppLogGroup permissions
+* Adding prosody.err to CloudWatch logs
+* Prosody cert permission fix
 
 2.0.0
 -----
