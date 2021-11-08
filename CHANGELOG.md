@@ -5,6 +5,7 @@
 * Fixing AppLogGroup permissions
 * Adding prosody.err to CloudWatch logs
 * Prosody cert permission fix
+* updates to plf generation
 
 2.0.0
 -----
