@@ -119,6 +119,12 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
             "timezone": "UTC"
           },
           {
+            "file_path": "/var/log/prosody/prosody.err",
+            "log_group_name": "${JitsiAppLogGroup}",
+            "log_stream_name": "{instance_id}-/var/log/prosody/prosody.err",
+            "timezone": "UTC"
+          },
+          {
             "file_path": "/var/log/prosody/prosody.log",
             "log_group_name": "${JitsiAppLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/prosody/prosody.log",
@@ -175,6 +181,11 @@ echo "org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$PUBLIC_IP" >> $JVB_CON
 sed -i 's/#DefaultLimitNOFILE=/DefaultLimitNOFILE=65000/g' /etc/systemd/system.conf
 sed -i 's/#DefaultLimitNPROC=/DefaultLimitNPROC=65000/g' /etc/systemd/system.conf
 sed -i 's/#DefaultTasksMax=/DefaultTasksMax=65000/g' /etc/systemd/system.conf
+
+# prosody fix
+chown prosody:prosody /etc/prosody/certs/localhost.key
+service prosody restart
+service jicofo restart
 
 systemctl daemon-reload
 systemctl restart jitsi-videobridge2
