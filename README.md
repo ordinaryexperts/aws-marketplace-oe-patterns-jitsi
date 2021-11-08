@@ -23,7 +23,7 @@ See the [Ordinary Experts AWS Marketplace Product Page](https://ordinaryexperts.
 
 * Ubuntu 18.04.4 LTS
 * Apache 2.4.29
-* Jitsi version 2.0.6293-1
+* Jitsi version 2.0.6433-1
 
 The AWS stack uses Amazon Elastic Compute Cloud (Amazon EC2), Amazon Virtual Public Cloud (Amazon VPC), Amazon CloudWatch and Amazon Route 53.
 
