@@ -2,7 +2,7 @@
 
 echo "$(date): Starting setup-env.sh"
 
-export CDK_VERSION=1.57.0
+export CDK_VERSION=1.87.1
 export PACKER_VERSION=1.5.5
 export TASKCAT_VERSION=0.9.20
 
@@ -30,8 +30,12 @@ cd -
 apt-get -y -q install python3 python3-pip
 pip3 install -q taskcat==$TASKCAT_VERSION
 
-# For scripts/gen-pfl.py
-pip3 install -q awspricing pystache
+# For scripts/pfl.py
+pip3 install -q \
+     openpyxl   \
+     pystache   \
+     pyyaml
+
 
 # cdk
 apt-get -y -q install npm
