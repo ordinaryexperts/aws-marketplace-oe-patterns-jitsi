@@ -14,7 +14,8 @@ apt-get -y install curl git jq ntp software-properties-common unzip vim wget zip
 
 # install latest CFN utilities
 apt-get -y install python-pip
-pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+pip install pystache==0.5.4
+pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-1.4-33.tar.gz
 
 # install aws cli
 cd /tmp
@@ -45,10 +46,10 @@ cd -
 #
 
 # Pin down a specific version
-# as of 2021-10-25, this is the latest stable release
+# as of 2021-12-11, this is the latest stable release
 # https://jitsi.org/blog/jitsi-meet-stable-releases-now-more-discoverable/
 # apt-cache madison jitsi-meet
-VERSION='2.0.6433-1'
+VERSION='2.0.6726-1'
 apt-get -y install apache2 debconf-utils gnupg2 uuid-runtime
 apt install apt-transport-https
 
