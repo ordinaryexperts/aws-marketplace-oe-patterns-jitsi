@@ -1,5 +1,9 @@
 # Unreleased
 
+2.2.0
+-----
+* Upgrading to Jitsi version 2.0.6726-1
+
 2.1.0
 -----
 * Upgrade to CDK version 1.87.1
