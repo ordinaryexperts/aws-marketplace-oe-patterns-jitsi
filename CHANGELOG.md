@@ -1,5 +1,8 @@
 # Unreleased
 
+* Upgrading to Jitsi version 2.0.7001-1
+* Upgrading to devenv container
+
 2.2.0
 -----
 * Upgrading to Jitsi version 2.0.6726-1

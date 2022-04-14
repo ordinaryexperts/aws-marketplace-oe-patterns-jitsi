@@ -13,7 +13,8 @@ from aws_cdk import (
     core
 )
 
-from oe_patterns_cdk_common import Vpc
+from oe_patterns_cdk_common.asg import Asg
+from oe_patterns_cdk_common.vpc import Vpc
 
 TWO_YEARS_IN_DAYS=731
 if 'TEMPLATE_VERSION' in os.environ:
