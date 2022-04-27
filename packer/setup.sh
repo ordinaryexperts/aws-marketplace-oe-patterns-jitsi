@@ -45,6 +45,9 @@ cd -
 #  * https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart
 #
 
+# deps
+apt-get -y install autotools-dev libltdl-dev liblua5.1-0 liblua5.1-0-dev libreadline-dev libtinfo-dev libtool libtool-bin pkg-config
+
 # Pin down a specific version
 # as of 2022-03-14, this is the latest stable release
 # https://jitsi.org/blog/jitsi-meet-stable-releases-now-more-discoverable/

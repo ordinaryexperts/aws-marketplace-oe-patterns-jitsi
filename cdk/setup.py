@@ -5,7 +5,7 @@ with open("README.md") as fp:
     long_description = fp.read()
 
 
-CDK_VERSION="1.87.1"
+CDK_VERSION="1.148.0"
 
 setuptools.setup(
     name="jitsi",
@@ -21,6 +21,7 @@ setuptools.setup(
     packages=setuptools.find_packages(where="jitsi"),
 
     install_requires=[
+        f"aws-cdk.assertions=={CDK_VERSION}",
         f"aws-cdk.aws-autoscaling=={CDK_VERSION}",
         f"aws-cdk.aws-cloudwatch=={CDK_VERSION}",
         f"aws-cdk.aws-ec2=={CDK_VERSION}",
@@ -29,7 +30,7 @@ setuptools.setup(
         f"aws-cdk.aws-route53=={CDK_VERSION}",
         f"aws-cdk.aws-sns=={CDK_VERSION}",
         f"aws-cdk.core=={CDK_VERSION}",
-        f"oe-patterns-cdk-common@git+https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-cdk-common@b2212b689d81b94d2f405990f94e9c4a0f8078cb"
+        f"oe-patterns-cdk-common@git+https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-cdk-common@2.1.0"
     ],
 
     python_requires=">=3.6",
