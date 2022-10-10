@@ -13,9 +13,10 @@ apt-get -y update && apt-get -y upgrade
 apt-get -y install curl git jq ntp software-properties-common unzip vim wget zip
 
 # install latest CFN utilities
-apt-get -y install python-pip
-pip install pystache==0.5.4
-pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-1.4-33.tar.gz
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-helper-scripts-reference.html#cfn-helper-scripts-reference-downloads
+apt-get -y install python3-pip
+pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+ln -s /root/aws-cfn-bootstrap-latest/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
 
 # install aws cli
 cd /tmp
@@ -32,36 +33,32 @@ cd -
 # collectd for metrics
 apt-get -y install collectd
 
-# install CodeDeploy agent - requires ruby
-apt-get -y install ruby
-cd /tmp
-curl https://aws-codedeploy-us-west-1.s3.us-west-1.amazonaws.com/latest/install -o install
-chmod +x ./install
-./install auto
-cd -
-
 #
 # Jitsi configuration
 #  * https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart
 #
 
-# deps
-apt-get -y install autotools-dev libltdl-dev liblua5.1-0 liblua5.1-0-dev libreadline-dev libtinfo-dev libtool libtool-bin pkg-config
-
 # Pin down a specific version
-# as of 2022-03-14, this is the latest stable release
+# as of 2022-04-28, this is the latest stable release
 # https://jitsi.org/blog/jitsi-meet-stable-releases-now-more-discoverable/
 # apt-cache madison jitsi-meet
-VERSION='2.0.7001-1'
-apt-get -y install apache2 debconf-utils gnupg2 uuid-runtime
+VERSION='2.0.7210-1'
+
+# deps
+apt-get -y install autotools-dev libltdl-dev libreadline-dev libtinfo-dev libtool libtool-bin pkg-config openjdk-11-jre
+apt-get -y install nginx debconf-utils gnupg2 uuid-runtime
 apt install apt-transport-https
 
 # disable default site
-a2dissite 000-default
+rm /etc/nginx/sites-enabled/default
 
-# prosody 0.11
-wget https://prosody.im/files/prosody-debian-packages.key -O- | apt-key add -
-echo deb http://packages.prosody.im/debian $(lsb_release -sc) main | tee -a /etc/apt/sources.list.d/prosody-dev.list > /dev/null
+# prosody 0.11.13
+# https://community.jitsi.org/t/ubuntu-18-04-lts-install-guide-fails-since-the-release-of-prosody-0-2/112575/2
+# wget https://prosody.im/files/prosody-debian-packages.key -O- | apt-key add -
+# echo deb http://packages.prosody.im/debian $(lsb_release -sc) main | tee -a /etc/apt/sources.list.d/prosody-dev.list > /dev/null
+apt-get install -y lua5.2 liblua5.2 lua-expat lua-filesystem lua-socket ssl-cert libidn11
+curl https://packages.prosody.im/debian/pool/main/p/prosody/prosody_0.11.13-1~bionic1_amd64.deb -o prosody_0.11.13.deb
+dpkg -i prosody_0.11.13.deb
 
 # jitsi
 curl https://download.jitsi.org/jitsi-key.gpg.key | gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg

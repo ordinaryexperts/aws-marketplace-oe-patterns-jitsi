@@ -3,7 +3,8 @@
 * Upgrading to Jitsi version 2.0.7001-1
 * Upgrading to devenv container
 * Upgrading to ASG common library (changes parameter names)
-* Upgrading to CDK version 1.148.0
+* Upgrading to CDK version 2.20.0
+* Adding NLB
 
 2.2.0
 -----

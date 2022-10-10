@@ -36,109 +36,109 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
         "collect_list": [
           {
             "file_path": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/dpkg.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/dpkg.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/apt/history.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/apt/history.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/cfn-init.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/cfn-init.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/cfn-init-cmd.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/cfn-init-cmd.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/cfn-wire.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/cfn-wire.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/cloud-init.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/cloud-init.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/cloud-init-output.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/cloud-init-output.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/auth.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/auth.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/syslog",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/syslog",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/amazon/ssm/amazon-ssm-agent.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/amazon/ssm/amazon-ssm-agent.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/amazon/ssm/errors.log",
-            "log_group_name": "${JitsiSystemLogGroup}",
+            "log_group_name": "${AsgSystemLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/amazon/ssm/errors.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/jitsi/jicofo.log",
-            "log_group_name": "${JitsiAppLogGroup}",
+            "log_group_name": "${AsgAppLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/jitsi/jicofo.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/jitsi/jvb.log",
-            "log_group_name": "${JitsiAppLogGroup}",
+            "log_group_name": "${AsgAppLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/jitsi/jvb.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/prosody/prosody.err",
-            "log_group_name": "${JitsiAppLogGroup}",
+            "log_group_name": "${AsgAppLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/prosody/prosody.err",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/prosody/prosody.log",
-            "log_group_name": "${JitsiAppLogGroup}",
+            "log_group_name": "${AsgAppLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/prosody/prosody.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/apache2/other_vhosts_access.log",
-            "log_group_name": "${JitsiAppLogGroup}",
+            "log_group_name": "${AsgAppLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/apache2/other_vhosts_access.log",
             "timezone": "UTC"
           },
           {
             "file_path": "/var/log/apache2/error.log",
-            "log_group_name": "${JitsiAppLogGroup}",
+            "log_group_name": "${AsgAppLogGroup}",
             "log_stream_name": "{instance_id}-/var/log/apache2/error.log",
             "timezone": "UTC"
           }
@@ -165,8 +165,8 @@ echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-si
 
 # jitsi-meet was downloaded but not installed during AMI build...
 dpkg -i /root/jitsi-debs/lua*.deb
-dpkg -i /root/jitsi-debs/prosody*.deb
 dpkg -i /root/jitsi-debs/jitsi-videobridge*.deb
+dpkg -i /root/jitsi-debs/jitsi-meet-web-config*.deb
 dpkg -i /root/jitsi-debs/*.deb
 
 # configure Jitsi behind NAT Gateway
@@ -226,7 +226,7 @@ then
     wget -O $JITSI_IMAGE_DIR/watermark.png $JITSI_WATERMARK
 fi
 echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" >> $INTERFACE_CONFIG
-systemctl restart apache2
+# systemctl restart nginx
 
 #
 # associate EIP
@@ -254,33 +254,14 @@ while [[ $success != 0 ]]; do
     ((attach_tries++))
 done
 
-# generate Let's Encrypt certificate
-#   https://stackoverflow.com/questions/57904900/aws-cloudformation-template-with-letsencrypt-ssl-certificate
-LETSENCRYPTEMAIL="${LetsEncryptCertificateEmail}"
-if [ -z "$LETSENCRYPTEMAIL" ]; then
-    # no Let's Encrypt email - modify the install script not to use it
-    sed -i 's/--agree-tos --email $EMAIL/--agree-tos --register-unsafely-without-email/g' /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
-    LETSENCRYPTEMAIL="dummy@example.com"
-fi
+sed -i 's/server_names_hash_bucket_size 64;/server_names_hash_bucket_size 128;/g' /etc/nginx/sites-available/${JitsiHostname}.conf
+rm -f /etc/nginx/sites-enabled/default
 
-while true; do
-    printf "$LETSENCRYPTEMAIL\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
-
-    if [ $? -eq 0 ]
-    then
-        echo "LetsEncrypt success"
-        break
-    else
-        echo "Retry..."
-        # https://letsencrypt.org/docs/rate-limits/
-        sleep 30
-    fi
-done
-systemctl restart apache2
+systemctl restart nginx
 success=$?
 
 #
 # cloudformation signal
 #
 
-cfn-signal --exit-code $success --stack ${AWS::StackName} --resource JitsiAsg --region ${AWS::Region}
+cfn-signal --exit-code $success --stack ${AWS::StackName} --resource Asg --region ${AWS::Region}
