@@ -162,11 +162,16 @@ echo "127.0.0.1 ${JitsiHostname}" >> /etc/hosts
 # preselect Jitsi install questions
 echo "jitsi-videobridge2 jitsi-videobridge/jvb-hostname string ${JitsiHostname}" | debconf-set-selections
 echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)" | debconf-set-selections
+echo "jitsi-meet-web-config jitsi-meet/jaas-choice boolean false" | debconf-set-selections
 
 # jitsi-meet was downloaded but not installed during AMI build...
+apt-get --fix-broken -y install
+apt-get install -y liblua5.1-0-dev
 dpkg -i /root/jitsi-debs/lua*.deb
 dpkg -i /root/jitsi-debs/prosody*.deb
+apt-get --fix-broken -y install
 dpkg -i /root/jitsi-debs/jitsi-videobridge*.deb
+dpkg -i /root/jitsi-debs/*.deb
 dpkg -i /root/jitsi-debs/*.deb
 
 # configure Jitsi behind NAT Gateway
@@ -178,9 +183,9 @@ echo "org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$LOCAL_IP" >> $JVB_CONFI
 echo "org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$PUBLIC_IP" >> $JVB_CONFIG
 
 # raise systemd limits
-sed -i 's/#DefaultLimitNOFILE=/DefaultLimitNOFILE=65000/g' /etc/systemd/system.conf
-sed -i 's/#DefaultLimitNPROC=/DefaultLimitNPROC=65000/g' /etc/systemd/system.conf
-sed -i 's/#DefaultTasksMax=/DefaultTasksMax=65000/g' /etc/systemd/system.conf
+sed -i 's/^#DefaultLimitNOFILE=.*$/DefaultLimitNOFILE=65000/' /etc/systemd/system.conf
+sed -i 's/^#DefaultLimitNPROC=.*$/DefaultLimitNPROC=65000/' /etc/systemd/system.conf
+sed -i 's/^#DefaultTasksMax=.*$/DefaultTasksMax=65000/' /etc/systemd/system.conf
 
 # prosody fix
 chown prosody:prosody /etc/prosody/certs/localhost.key
@@ -277,6 +282,8 @@ while true; do
     fi
 done
 systemctl restart apache2
+
+echo 'hi'
 success=$?
 
 #
