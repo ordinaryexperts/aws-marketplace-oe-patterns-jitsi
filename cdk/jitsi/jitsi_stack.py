@@ -5,6 +5,7 @@ from aws_cdk import (
     Aws,
     aws_autoscaling,
     aws_ec2,
+    aws_elasticloadbalancingv2,
     aws_iam,
     aws_logs,
     aws_route53,
@@ -41,10 +42,10 @@ else:
 # 2) $ ave oe-patterns-dev make AMI_ID=ami-fromstep1 ami-ec2-copy
 # 3) Copy the code that copy-image generates below
 
-AMI_ID="ami-07698206caaf6d682"
-AMI_NAME="ordinary-experts-patterns-jitsi--20230710-0346"
+AMI_ID="ami-0655acd20bbda9332"
+AMI_NAME="ordinary-experts-patterns-jitsi-1.0.0-20230712-0246"
 generated_ami_ids = {
-    "us-east-1": "ami-07698206caaf6d682"
+    "us-east-1": "ami-0655acd20bbda9332"
 }
 # End generated code block.
 
@@ -63,11 +64,11 @@ class JitsiStack(Stack):
         )
         ami_mapping={
             "AMI": {
-                "OEJITSI": AMI_NAME
+                "AMI": AMI_NAME
             }
         }
         for region in generated_ami_ids.keys():
-            ami_mapping[region] = { "OEJITSI": generated_ami_ids[region] }
+            ami_mapping[region] = { "AMI": generated_ami_ids[region] }
         aws_ami_region_map = CfnMapping(
             self,
             "AWSAMIRegionMap",
@@ -92,13 +93,6 @@ class JitsiStack(Stack):
             allowed_pattern="((\d{1,3})\.){3}\d{1,3}/\d{1,2}",
             default="0.0.0.0/0",
             description="Required: A CIDR block to restrict access to the Jitsi application. Leave as 0.0.0.0/0 to allow public access from internet."
-        )
-        ec2_instance_type_param = CfnParameter(
-            self,
-            "InstanceType",
-            allowed_values=allowed_values["allowed_instance_types"],
-            default="t3.xlarge",
-            description="Required: The EC2 instance type for the application Auto Scaling Group."
         )
         jitsi_hostname_param = CfnParameter(
             self,
@@ -166,22 +160,6 @@ class JitsiStack(Stack):
             "Route53HostedZoneName",
             description="Required: Route 53 Hosted Zone name in which a DNS record will be created by this template. Must already exist and be the domain part of the Jitsi Hostname parameter, without trailing dot. E.G. 'internal.mycompany.com'"
         )
-        notification_email_param = CfnParameter(
-            self,
-            "NotificationEmail",
-            default="",
-            description="Optional: Specify an email address to get emails about deploys, Let's Encrypt, and other system events."
-        )
-
-        #
-        # CONDITIONS
-        #
-
-        notification_email_exists_condition = CfnCondition(
-            self,
-            "NotificationEmailExistsCondition",
-            expression=Fn.condition_not(Fn.condition_equals(notification_email_param.value, ""))
-        )
 
         #
         # RESOURCES
@@ -193,191 +171,125 @@ class JitsiStack(Stack):
             "Vpc"
         )
 
-        # sns
-        sns_notification_topic = aws_sns.CfnTopic(
+        certificate_arn_param = CfnParameter(
             self,
-            "NotificationTopic",
-            topic_name="{}-notifications".format(Aws.STACK_NAME)
-        )
-        sns_notification_subscription = aws_sns.CfnSubscription(
-            self,
-            "NotificationSubscription",
-            protocol="email",
-            topic_arn=sns_notification_topic.ref,
-            endpoint=notification_email_param.value_as_string
-        )
-        sns_notification_subscription.cfn_options.condition = notification_email_exists_condition
-        iam_notification_publish_policy = aws_iam.PolicyDocument(
-            statements=[
-                aws_iam.PolicyStatement(
-                    effect=aws_iam.Effect.ALLOW,
-                    actions=[ "sns:Publish" ],
-                    resources=[ sns_notification_topic.ref ]
-                )
-            ]
+            "CertificateArn",
+            description="Specify the ARN of an ACM Certificate to configure HTTPS."
         )
 
-        # cloudwatch
-        app_log_group = aws_logs.CfnLogGroup(
+        nlb = aws_elasticloadbalancingv2.CfnLoadBalancer(
             self,
-            "JitsiAppLogGroup",
-            retention_in_days=TWO_YEARS_IN_DAYS
-        )
-        app_log_group.cfn_options.update_replace_policy = CfnDeletionPolicy.RETAIN
-        app_log_group.cfn_options.deletion_policy = CfnDeletionPolicy.RETAIN
-        system_log_group = aws_logs.CfnLogGroup(
-            self,
-            "JitsiSystemLogGroup",
-            retention_in_days=TWO_YEARS_IN_DAYS
-        )
-        system_log_group.cfn_options.update_replace_policy = CfnDeletionPolicy.RETAIN
-        system_log_group.cfn_options.deletion_policy = CfnDeletionPolicy.RETAIN
-
-        # iam
-        iam_jitsi_instance_role = aws_iam.CfnRole(
-            self,
-            "JitsiInstanceRole",
-            assume_role_policy_document=aws_iam.PolicyDocument(
-                statements=[
-                    aws_iam.PolicyStatement(
-                        effect=aws_iam.Effect.ALLOW,
-                        actions=[ "sts:AssumeRole" ],
-                        principals=[ aws_iam.ServicePrincipal("ec2.amazonaws.com") ]
-                    )
-                ]
-            ),
-            policies=[
-                aws_iam.CfnRole.PolicyProperty(
-                    policy_document=aws_iam.PolicyDocument(
-                        statements=[
-                            aws_iam.PolicyStatement(
-                                effect=aws_iam.Effect.ALLOW,
-                                actions=[
-                                    "logs:CreateLogStream",
-                                    "logs:DescribeLogStreams",
-                                    "logs:PutLogEvents"
-                                ],
-                                resources=[
-                                    app_log_group.attr_arn,
-                                    system_log_group.attr_arn
-                                ]
-                            )
-                        ]
-                    ),
-                    policy_name="AllowStreamLogsToCloudWatch"
-                ),
-                aws_iam.CfnRole.PolicyProperty(
-                    policy_document=aws_iam.PolicyDocument(
-                        statements=[
-                            aws_iam.PolicyStatement(
-                                effect=aws_iam.Effect.ALLOW,
-                                actions=[
-                                    "ec2:AssociateAddress",
-                                    "ec2:DescribeVolumes",
-                                    "ec2:DescribeTags",
-                                    "cloudwatch:GetMetricStatistics",
-                                    "cloudwatch:ListMetrics",
-                                    "cloudwatch:PutMetricData"
-                                ],
-                                resources=[ "*" ]
-                            )
-                        ]
-                    ),
-                    policy_name="AllowStreamMetricsToCloudWatch"
-                ),
-                aws_iam.CfnRole.PolicyProperty(
-                    policy_document=aws_iam.PolicyDocument(
-                        statements=[
-                            aws_iam.PolicyStatement(
-                                effect=aws_iam.Effect.ALLOW,
-                                actions=[ "autoscaling:Describe*" ],
-                                resources=[ "*" ]
-                            )
-                        ]
-                    ),
-                    policy_name="AllowDescribeAutoScaling"
-                ),
-            ],
-            managed_policy_arns=[
-                "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-            ]
+            "Nlb",
+            scheme="internet-facing",
+            subnets=vpc.public_subnet_ids(),
+            type="network"
         )
 
-        # ec2
-        jitsi_sg = aws_ec2.CfnSecurityGroup(
+        http_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
             self,
-            "JitsiSg",
-            group_description="Jitsi security group",
+            "HttpTargetGroup",
+            port=80,
+            protocol="TCP",
+            target_type="instance",
             vpc_id=vpc.id()
         )
 
-        eip = aws_ec2.CfnEIP(
-            self,
-            "Eip",
-            domain="vpc"
-        )
-        Tags.of(eip).add("Name", "{}/Eip".format(Aws.STACK_NAME))
 
-        ec2_instance_profile = aws_iam.CfnInstanceProfile(
-	    self,
-	    "JitsiInstanceProfile",
-            roles=[ iam_jitsi_instance_role.ref ]
+        https_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
+            self,
+            "HttpsTargetGroup",
+            port=443,
+            protocol="TLS",
+            target_type="instance",
+            vpc_id=vpc.id()
         )
+        https_listener = aws_elasticloadbalancingv2.CfnListener(
+            self,
+            "HttpsListener",
+            certificates=[
+                aws_elasticloadbalancingv2.CfnListener.CertificateProperty(
+                    certificate_arn=certificate_arn_param.value_as_string
+                )
+            ],
+            default_actions=[
+                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
+                    target_group_arn=https_target_group.ref,
+                    type="forward"
+                )
+            ],
+            load_balancer_arn=nlb.ref,
+            port=443,
+            protocol="TLS"
+        )
+        fallback_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
+            self,
+            "FallbackTargetGroup",
+            port=4443,
+            protocol="TCP",
+            target_type="instance",
+            vpc_id=vpc.id()
+        )
+        fallback_listener = aws_elasticloadbalancingv2.CfnListener(
+            self,
+            "FallbackListener",
+            default_actions=[
+                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
+                    target_group_arn=fallback_target_group.ref,
+                    type="forward"
+                )
+            ],
+            load_balancer_arn=nlb.ref,
+            port=4443,
+            protocol="TCP"
+        )
+        jitsi_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
+            self,
+            "JitsiTargetGroup",
+            port=10000,
+            protocol="UDP",
+            target_type="instance",
+            vpc_id=vpc.id()
+        )
+        jitsi_listener = aws_elasticloadbalancingv2.CfnListener(
+            self,
+            "JitsiListener",
+            default_actions=[
+                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
+                    target_group_arn=jitsi_target_group.ref,
+                    type="forward"
+                )
+            ],
+            load_balancer_arn=nlb.ref,
+            port=10000,
+            protocol="UDP"
+        )
+
         with open("jitsi/user_data.sh") as f:
             user_data = f.read()
-        ec2_launch_config = aws_autoscaling.CfnLaunchConfiguration(
+        asg = Asg(
             self,
-            "JitsiLaunchConfig",
-            image_id=Fn.find_in_map("AWSAMIRegionMap", Aws.REGION, "OEJITSI"),
-            instance_type=ec2_instance_type_param.value_as_string,
-            iam_instance_profile=ec2_instance_profile.ref,
-            security_groups=[ jitsi_sg.ref ],
-            user_data=(
-                Fn.base64(
-                    Fn.sub(
-                        user_data,
-                        {
-                            "JitsiHostname": jitsi_hostname_param.value_as_string,
-                            "JitsiPublicIP": eip.ref,
-                            "LetsEncryptCertificateEmail": notification_email_param.value_as_string
-                        }
-                    )
-                )
-            )
+            "Asg",
+            default_instance_type = "t3.xlarge",
+            use_graviton = False,
+            user_data_contents=user_data,
+            user_data_variables = {
+                'JitsiHostname': jitsi_hostname_param.value_as_string
+            },
+            vpc=vpc
         )
-
-        # autoscaling
-        asg = aws_autoscaling.CfnAutoScalingGroup(
-            self,
-            "JitsiAsg",
-            launch_configuration_name=ec2_launch_config.ref,
-            desired_capacity="1",
-            max_size="1",
-            min_size="1",
-            vpc_zone_identifier=vpc.public_subnet_ids()
-        )
-        asg.cfn_options.creation_policy=CfnCreationPolicy(
-            resource_signal=CfnResourceSignal(
-                count=1,
-                timeout="PT15M"
-            )
-        )
-        asg.cfn_options.update_policy=CfnUpdatePolicy(
-            auto_scaling_rolling_update=CfnAutoScalingRollingUpdate(
-                max_batch_size=1,
-                min_instances_in_service=0,
-                pause_time="PT15M",
-                wait_on_resource_signals=True
-            )
-        )
-        Tags.of(asg).add("Name", "{}/JitsiAsg".format(Aws.STACK_NAME))
+        asg.asg.target_group_arns = [
+            http_target_group.ref,
+            https_target_group.ref,
+            fallback_target_group.ref,
+            jitsi_target_group.ref
+        ]
 
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
             "JitsiHttpSgIngress",
             cidr_ip=cidr_block_param.value_as_string,
             from_port=80,
-            group_id=jitsi_sg.ref,
+            group_id=asg.sg.ref,
             ip_protocol="tcp",
             to_port=80
         )
@@ -386,7 +298,7 @@ class JitsiStack(Stack):
             "JitsiHttpsSgIngress",
             cidr_ip=cidr_block_param.value_as_string,
             from_port=443,
-            group_id=jitsi_sg.ref,
+            group_id=asg.sg.ref,
             ip_protocol="tcp",
             to_port=443
         )
@@ -395,7 +307,7 @@ class JitsiStack(Stack):
             "JitsiFallbackNetworkAudioVideoSgIngress",
             cidr_ip=cidr_block_param.value_as_string,
             from_port=4443,
-            group_id=jitsi_sg.ref,
+            group_id=asg.sg.ref,
             ip_protocol="tcp",
             to_port=4443
         )
@@ -404,21 +316,19 @@ class JitsiStack(Stack):
             "JitsiGeneralNetworkAudioVideoSgIngress",
             cidr_ip=cidr_block_param.value_as_string,
             from_port=10000,
-            group_id=jitsi_sg.ref,
+            group_id=asg.sg.ref,
             ip_protocol="udp",
             to_port=10000
         )
 
-        # route 53
         record_set = aws_route53.CfnRecordSet(
             self,
             "RecordSet",
             hosted_zone_name=f"{route_53_hosted_zone_name_param.value_as_string}.",
             name=jitsi_hostname_param.value_as_string,
-            resource_records=[ eip.ref ],
-            type="A"
+            resource_records=[ nlb.attr_dns_name ],
+            type="CNAME"
         )
-        # https://github.com/aws/aws-cdk/issues/8431
         record_set.add_property_override("TTL", 60)
 
         # AWS::CloudFormation::Interface
@@ -433,9 +343,7 @@ class JitsiStack(Stack):
                         "Parameters": [
                             jitsi_hostname_param.logical_id,
                             route_53_hosted_zone_name_param.logical_id,
-                            cidr_block_param.logical_id,
-                            ec2_instance_type_param.logical_id,
-                            notification_email_param.logical_id
+                            cidr_block_param.logical_id
                         ]
                     },
                     {
@@ -454,14 +362,12 @@ class JitsiStack(Stack):
                             jitsi_interface_watermark_link_param.logical_id,
                         ]
                     },
+                    *asg.metadata_parameter_group(),
                     *vpc.metadata_parameter_group()
                 ],
                 "ParameterLabels": {
                     cidr_block_param.logical_id: {
                         "default": "Ingress CIDR Block"
-                    },
-                    ec2_instance_type_param.logical_id: {
-                        "default": "EC2 instance type"
                     },
                     jitsi_hostname_param.logical_id: {
                         "default": "Jitsi Hostname"
@@ -493,12 +399,10 @@ class JitsiStack(Stack):
                     jitsi_interface_watermark_link_param.logical_id: {
                         "default": "Jitsi Interface Watermark Link"
                     },
-                    notification_email_param.logical_id: {
-                        "default": "Notification Email"
-                    },
                     route_53_hosted_zone_name_param.logical_id: {
                         "default": "AWS Route 53 Hosted Zone Name"
                     },
+                    **asg.metadata_parameter_labels(),
                     **vpc.metadata_parameter_labels()
                 }
             }
@@ -508,12 +412,6 @@ class JitsiStack(Stack):
         # OUTPUTS
         #
 
-        eip_output = CfnOutput(
-            self,
-            "EipOutput",
-            description="The Elastic IP address dynamically mapped to the autoscaling group instance.",
-            value=eip.ref
-        )
         endpoint_output = CfnOutput(
             self,
             "JitsiUrl",
