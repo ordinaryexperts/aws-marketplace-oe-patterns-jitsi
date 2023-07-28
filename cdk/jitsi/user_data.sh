@@ -76,6 +76,14 @@ fi
 echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" >> $INTERFACE_CONFIG
 
 sed -i 's/server_names_hash_bucket_size 64;/server_names_hash_bucket_size 128;/g' /etc/nginx/sites-available/${JitsiHostname}.conf
+sed -i '\|root /usr/share/jitsi-meet;|a \
+\
+    location = /elb-check {\
+        access_log off;\
+        return 200 '\''ok'\'';\
+        add_header Content-Type text/plain;\
+    }\
+' /etc/nginx/sites-available/${JitsiHostname}.conf
 rm -f /etc/nginx/sites-enabled/default
 
 systemctl restart nginx

@@ -1,27 +1,14 @@
 import os
 import subprocess
-import yaml
 from aws_cdk import (
-    Aws,
-    aws_autoscaling,
     aws_ec2,
     aws_elasticloadbalancingv2,
-    aws_iam,
-    aws_logs,
     aws_route53,
-    aws_sns,
-    CfnAutoScalingRollingUpdate,
-    CfnCondition,
-    CfnCreationPolicy,
-    CfnDeletionPolicy,
     CfnMapping,
     CfnOutput,
     CfnParameter,
-    CfnResourceSignal,
-    CfnUpdatePolicy,
     Fn,
-    Stack,
-    Tags
+    Stack
 )
 from constructs import Construct
 
@@ -42,10 +29,10 @@ else:
 # 2) $ ave oe-patterns-dev make AMI_ID=ami-fromstep1 ami-ec2-copy
 # 3) Copy the code that copy-image generates below
 
-AMI_ID="ami-0655acd20bbda9332"
-AMI_NAME="ordinary-experts-patterns-jitsi-1.0.0-20230712-0246"
+AMI_ID="ami-0316b1cfa63bd2713"
+AMI_NAME="ordinary-experts-patterns-jitsi-2.2.0-4-g6c1ddcb-20230728-0507"
 generated_ami_ids = {
-    "us-east-1": "ami-0655acd20bbda9332"
+    "us-east-1": "ami-0316b1cfa63bd2713"
 }
 # End generated code block.
 
@@ -180,16 +167,32 @@ class JitsiStack(Stack):
             target_type="instance",
             vpc_id=vpc.id()
         )
-
+        http_listener = aws_elasticloadbalancingv2.CfnListener(
+            self,
+            "HttpListener",
+            default_actions=[
+                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
+                    target_group_arn=http_target_group.ref,
+                    type="forward"
+                )
+            ],
+            load_balancer_arn=nlb.ref,
+            port=80,
+            protocol="TLS"
+        )
 
         https_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
             self,
             "HttpsTargetGroup",
+            health_check_path='/elb-check',
+            health_check_protocol='HTTPS',
+            health_check_timeout_seconds=10,
             port=443,
             protocol="TLS",
             target_type="instance",
             vpc_id=vpc.id()
         )
+
         https_listener = aws_elasticloadbalancingv2.CfnListener(
             self,
             "HttpsListener",
