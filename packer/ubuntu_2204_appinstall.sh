@@ -103,33 +103,15 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
             "timezone": "UTC"
           },
           {
-            "file_path": "/var/log/apache2/access.log",
-            "log_group_name": "ASG_SYSTEM_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/apache2/access.log",
+            "file_path": "/var/log/nginx/error.log",
+            "log_group_name": "ASG_APP_LOG_GROUP_PLACEHOLDER",
+            "log_stream_name": "{instance_id}-/var/log/nginx/error.log",
             "timezone": "UTC"
           },
           {
-            "file_path": "/var/log/apache2/other_vhosts_access.log",
-            "log_group_name": "ASG_SYSTEM_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/apache2/other_vhosts_access.log",
-            "timezone": "UTC"
-          },
-          {
-            "file_path": "/var/log/apache2/error.log",
-            "log_group_name": "ASG_SYSTEM_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/apache2/error.log",
-            "timezone": "UTC"
-          },
-          {
-            "file_path": "/var/log/apache2/access-ssl.log",
-            "log_group_name": "ASG_SYSTEM_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/apache2/access-ssl.log",
-            "timezone": "UTC"
-          },
-          {
-            "file_path": "/var/log/apache2/error-ssl.log",
-            "log_group_name": "ASG_SYSTEM_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/apache2/error-ssl.log",
+            "file_path": "/var/log/nginx/access.log",
+            "log_group_name": "ASG_APP_LOG_GROUP_PLACEHOLDER",
+            "log_stream_name": "{instance_id}-/var/log/nginx/access.log",
             "timezone": "UTC"
           },
           {

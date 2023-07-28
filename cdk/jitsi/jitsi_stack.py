@@ -57,11 +57,6 @@ class JitsiStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        current_directory = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        allowed_values = yaml.load(
-            open(os.path.join(current_directory, "..", "..", "allowed_values.yaml")),
-            Loader=yaml.SafeLoader
-        )
         ami_mapping={
             "AMI": {
                 "AMI": AMI_NAME
@@ -74,14 +69,6 @@ class JitsiStack(Stack):
             "AWSAMIRegionMap",
             mapping=ami_mapping
         )
-
-        # utility function to parse the unique id from the stack id for
-        # shorter resource names  using cloudformation functions
-        def append_stack_uuid(name):
-            return Fn.join("-", [
-                name,
-                Fn.select(0, Fn.split("-", Fn.select(2, Fn.split("/", Aws.STACK_ID))))
-            ])
 
         #
         # PARAMETERS

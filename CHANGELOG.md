@@ -6,6 +6,7 @@
 * Upgrading to ASG common library (changes parameter names)
 * Upgrade to CDK version 2.44.0
 * Adding NLB + Amazon Certificate Manager support
+* Adding nginx logs to CloudWatch
 
 2.2.0
 -----
