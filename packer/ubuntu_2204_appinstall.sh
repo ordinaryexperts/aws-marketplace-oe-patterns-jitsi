@@ -146,6 +146,9 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 }
 EOF
 
+# expect - for update prosody passwd
+apt-get install -y expect
+
 # ruby
 apt-get install -y fonts-lato libruby3.0 rake ruby ruby-hocon ruby-net-telnet ruby-rubygems ruby-webrick ruby-xmlrpc ruby3.0 rubygems-integration
 

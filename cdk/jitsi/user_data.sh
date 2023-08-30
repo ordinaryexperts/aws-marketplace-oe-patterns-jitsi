@@ -32,6 +32,24 @@ sed -i 's/^#DefaultTasksMax=.*$/DefaultTasksMax=65000/' /etc/systemd/system.conf
 
 # prosody fix
 chown prosody:prosody /etc/prosody/certs/localhost.key
+
+# https://community.jitsi.org/t/saslerror-using-scram-sha-1-not-authorized/120768/5
+JVB_PASSWORD=$(grep -oP 'org.jitsi.videobridge.xmpp.user.shard.PASSWORD=\K.*' /etc/jitsi/videobridge/sip-communicator.properties)
+cat <<EOF > /root/update-prosody-jvb-password.expect
+#!/usr/bin/expect
+set timeout -1
+spawn prosodyctl passwd jvb@auth.${JitsiHostname}
+expect "Enter new password:" {
+    send "$JVB_PASSWORD\r"
+    exp_continue
+} "Retype new password:" {
+    send "$JVB_PASSWORD\r"
+}
+expect eof
+EOF
+chmod +x /root/update-prosody-jvb-password.expect
+/root/update-prosody-jvb-password.expect
+
 service prosody restart
 service jicofo restart
 
@@ -58,6 +76,7 @@ echo "interfaceConfig.NATIVE_APP_NAME = '${JitsiInterfaceNativeAppName}';" >>  $
 echo "interfaceConfig.SHOW_BRAND_WATERMARK = ${JitsiInterfaceShowBrandWatermark};" >> $INTERFACE_CONFIG
 echo "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS = ${JitsiInterfaceShowWatermarkForGuests};" >> $INTERFACE_CONFIG
 echo "interfaceConfig.TOOLBAR_BUTTONS = [ 'microphone', 'camera', 'closedcaptions', 'desktop', 'embedmeeting', 'fullscreen', 'fodeviceselection', 'hangup', 'profile', 'chat', 'etherpad', 'sharedvideo', 'settings', 'raisehand', 'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts', 'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone', 'security' ];" >> $INTERFACE_CONFIG
+echo "interfaceConfig.DISABLE_VIDEO_BACKGROUND = true;" >> $INTERFACE_CONFIG
 
 # brand watermark image
 JITSI_BRAND_WATERMARK=${JitsiInterfaceBrandWatermark}
@@ -74,6 +93,9 @@ then
     wget -O $JITSI_IMAGE_DIR/watermark.png $JITSI_WATERMARK
 fi
 echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" >> $INTERFACE_CONFIG
+
+# https://cusy.io/en/our-platforms/support/faq/jitsi-meet-video-conferencing
+sed -i "/p2p:/{N;N;N;N;N;N;N;s/enabled: true/enabled: false/}" /etc/jitsi/meet/${JitsiHostname}-config.js
 
 sed -i 's/server_names_hash_bucket_size 64;/server_names_hash_bucket_size 128;/g' /etc/nginx/sites-available/${JitsiHostname}.conf
 sed -i '\|root /usr/share/jitsi-meet;|a \

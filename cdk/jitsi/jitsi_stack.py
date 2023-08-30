@@ -29,10 +29,10 @@ else:
 # 2) $ ave oe-patterns-dev make AMI_ID=ami-fromstep1 ami-ec2-copy
 # 3) Copy the code that copy-image generates below
 
-AMI_ID="ami-0316b1cfa63bd2713"
-AMI_NAME="ordinary-experts-patterns-jitsi-2.2.0-4-g6c1ddcb-20230728-0507"
+AMI_ID="ami-0f401ba26441415eb"
+AMI_NAME="ordinary-experts-patterns-jitsi-2.2.0-6-g543feb3-20230730-0631"
 generated_ami_ids = {
-    "us-east-1": "ami-0316b1cfa63bd2713"
+    "us-east-1": "ami-0f401ba26441415eb"
 }
 # End generated code block.
 
@@ -166,19 +166,6 @@ class JitsiStack(Stack):
             protocol="TCP",
             target_type="instance",
             vpc_id=vpc.id()
-        )
-        http_listener = aws_elasticloadbalancingv2.CfnListener(
-            self,
-            "HttpListener",
-            default_actions=[
-                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
-                    target_group_arn=http_target_group.ref,
-                    type="forward"
-                )
-            ],
-            load_balancer_arn=nlb.ref,
-            port=80,
-            protocol="TLS"
         )
 
         https_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
