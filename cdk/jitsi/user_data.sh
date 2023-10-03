@@ -25,6 +25,14 @@ dpkg -i /root/jitsi-debs/jitsi-videobridge*.deb
 dpkg -i /root/jitsi-debs/jitsi-meet-web-config*.deb
 dpkg -i /root/jitsi-debs/*.deb
 
+# configure Jitsi behind NAT Gateway
+JVB_CONFIG=/etc/jitsi/videobridge/sip-communicator.properties
+sed -i 's/^org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES/#&/' $JVB_CONFIG
+LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+PUBLIC_IP="${JitsiPublicIP}"
+echo "org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$LOCAL_IP" >> $JVB_CONFIG
+echo "org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$PUBLIC_IP" >> $JVB_CONFIG
+
 # raise systemd limits
 sed -i 's/^#DefaultLimitNOFILE=.*$/DefaultLimitNOFILE=65000/' /etc/systemd/system.conf
 sed -i 's/^#DefaultLimitNPROC=.*$/DefaultLimitNPROC=65000/' /etc/systemd/system.conf
@@ -94,9 +102,6 @@ then
 fi
 echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" >> $INTERFACE_CONFIG
 
-# https://cusy.io/en/our-platforms/support/faq/jitsi-meet-video-conferencing
-sed -i "/p2p:/{N;N;N;N;N;N;N;s/enabled: true/enabled: false/}" /etc/jitsi/meet/${JitsiHostname}-config.js
-
 sed -i 's/server_names_hash_bucket_size 64;/server_names_hash_bucket_size 128;/g' /etc/nginx/sites-available/${JitsiHostname}.conf
 sed -i '\|root /usr/share/jitsi-meet;|a \
 \
@@ -108,6 +113,50 @@ sed -i '\|root /usr/share/jitsi-meet;|a \
 ' /etc/nginx/sites-available/${JitsiHostname}.conf
 rm -f /etc/nginx/sites-enabled/default
 
+# error handling
+function error_exit
+{
+    cfn-signal --exit-code 1 --stack ${AWS::StackName} --resource Asg --region ${AWS::Region}
+    exit 1
+}
+
+instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+max_attach_tries=12
+attach_tries=0
+success=1
+while [[ $success != 0 ]]; do
+    if [ $attach_tries -gt $max_attach_tries ]; then
+        error_exit
+    fi
+    sleep 10
+    echo aws ec2 associate-address --region ${AWS::Region} --instance-id $instance_id --allocation-id ${Eip.AllocationId}
+    aws ec2 associate-address --region ${AWS::Region} --instance-id $instance_id --allocation-id ${Eip.AllocationId}
+    success=$?
+    ((attach_tries++))
+done
+
+# generate Let's Encrypt certificate
+#   https://stackoverflow.com/questions/57904900/aws-cloudformation-template-with-letsencrypt-ssl-certificate
+LETSENCRYPTEMAIL="${LetsEncryptCertificateEmail}"
+if [ -z "$LETSENCRYPTEMAIL" ]; then
+    # no Let's Encrypt email - modify the install script not to use it
+    sed -i 's/--agree-tos --email $EMAIL/--agree-tos --register-unsafely-without-email/g' /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+    LETSENCRYPTEMAIL="dummy@example.com"
+fi
+
+while true; do
+    printf "$LETSENCRYPTEMAIL\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+
+    if [ $? -eq 0 ]
+    then
+        echo "LetsEncrypt success"
+        break
+    else
+        echo "Retry..."
+        # https://letsencrypt.org/docs/rate-limits/
+        sleep 30
+    fi
+done
 systemctl restart nginx
 success=$?
 

@@ -1,14 +1,16 @@
 import os
 import subprocess
 from aws_cdk import (
+    Aws,
     aws_ec2,
-    aws_elasticloadbalancingv2,
     aws_route53,
+    CfnCondition,
     CfnMapping,
     CfnOutput,
     CfnParameter,
     Fn,
-    Stack
+    Stack,
+    Tags
 )
 from constructs import Construct
 
@@ -29,10 +31,10 @@ else:
 # 2) $ ave oe-patterns-dev make AMI_ID=ami-fromstep1 ami-ec2-copy
 # 3) Copy the code that copy-image generates below
 
-AMI_ID="ami-0f401ba26441415eb"
-AMI_NAME="ordinary-experts-patterns-jitsi-2.2.0-6-g543feb3-20230730-0631"
+AMI_ID="ami-03e91903d1796a608"
+AMI_NAME="ordinary-experts-patterns-jitsi-2.2.0-7-gd023808-20231002-1014"
 generated_ami_ids = {
-    "us-east-1": "ami-0f401ba26441415eb"
+    "us-east-1": "ami-03e91903d1796a608"
 }
 # End generated code block.
 
@@ -51,7 +53,7 @@ class JitsiStack(Stack):
         }
         for region in generated_ami_ids.keys():
             ami_mapping[region] = { "AMI": generated_ami_ids[region] }
-        aws_ami_region_map = CfnMapping(
+        CfnMapping(
             self,
             "AWSAMIRegionMap",
             mapping=ami_mapping
@@ -135,6 +137,23 @@ class JitsiStack(Stack):
             description="Required: Route 53 Hosted Zone name in which a DNS record will be created by this template. Must already exist and be the domain part of the Jitsi Hostname parameter, without trailing dot. E.G. 'internal.mycompany.com'"
         )
 
+        notification_email_param = CfnParameter(
+            self,
+            "NotificationEmail",
+            default="",
+            description="Optional: Specify an email address to get emails about deploys, Let's Encrypt, and other system events."
+        )
+
+        #
+        # CONDITIONS
+        #
+
+        notification_email_exists_condition = CfnCondition(
+            self,
+            "NotificationEmailExistsCondition",
+            expression=Fn.condition_not(Fn.condition_equals(notification_email_param.value, ""))
+        )
+
         #
         # RESOURCES
         #
@@ -145,121 +164,39 @@ class JitsiStack(Stack):
             "Vpc"
         )
 
-        certificate_arn_param = CfnParameter(
+        # ec2
+        jitsi_sg = aws_ec2.CfnSecurityGroup(
             self,
-            "CertificateArn",
-            description="Specify the ARN of an ACM Certificate to configure HTTPS."
-        )
-
-        nlb = aws_elasticloadbalancingv2.CfnLoadBalancer(
-            self,
-            "Nlb",
-            scheme="internet-facing",
-            subnets=vpc.public_subnet_ids(),
-            type="network"
-        )
-
-        http_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
-            self,
-            "HttpTargetGroup",
-            port=80,
-            protocol="TCP",
-            target_type="instance",
+            "JitsiSg",
+            group_description="Jitsi security group",
             vpc_id=vpc.id()
         )
 
-        https_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
+        eip = aws_ec2.CfnEIP(
             self,
-            "HttpsTargetGroup",
-            health_check_path='/elb-check',
-            health_check_protocol='HTTPS',
-            health_check_timeout_seconds=10,
-            port=443,
-            protocol="TLS",
-            target_type="instance",
-            vpc_id=vpc.id()
+            "Eip",
+            domain="vpc"
         )
-
-        https_listener = aws_elasticloadbalancingv2.CfnListener(
-            self,
-            "HttpsListener",
-            certificates=[
-                aws_elasticloadbalancingv2.CfnListener.CertificateProperty(
-                    certificate_arn=certificate_arn_param.value_as_string
-                )
-            ],
-            default_actions=[
-                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
-                    target_group_arn=https_target_group.ref,
-                    type="forward"
-                )
-            ],
-            load_balancer_arn=nlb.ref,
-            port=443,
-            protocol="TLS"
-        )
-        fallback_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
-            self,
-            "FallbackTargetGroup",
-            port=4443,
-            protocol="TCP",
-            target_type="instance",
-            vpc_id=vpc.id()
-        )
-        fallback_listener = aws_elasticloadbalancingv2.CfnListener(
-            self,
-            "FallbackListener",
-            default_actions=[
-                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
-                    target_group_arn=fallback_target_group.ref,
-                    type="forward"
-                )
-            ],
-            load_balancer_arn=nlb.ref,
-            port=4443,
-            protocol="TCP"
-        )
-        jitsi_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
-            self,
-            "JitsiTargetGroup",
-            port=10000,
-            protocol="UDP",
-            target_type="instance",
-            vpc_id=vpc.id()
-        )
-        jitsi_listener = aws_elasticloadbalancingv2.CfnListener(
-            self,
-            "JitsiListener",
-            default_actions=[
-                aws_elasticloadbalancingv2.CfnListener.ActionProperty(
-                    target_group_arn=jitsi_target_group.ref,
-                    type="forward"
-                )
-            ],
-            load_balancer_arn=nlb.ref,
-            port=10000,
-            protocol="UDP"
-        )
+        Tags.of(eip).add("Name", "{}/Eip".format(Aws.STACK_NAME))
 
         with open("jitsi/user_data.sh") as f:
             user_data = f.read()
         asg = Asg(
             self,
             "Asg",
-            default_instance_type = "t3.xlarge",
-            use_graviton = False,
+            allow_associate_address=True,
+            default_instance_type="t3.xlarge",
+            singleton=True,
+            use_graviton=False,
             user_data_contents=user_data,
-            user_data_variables = {
-                'JitsiHostname': jitsi_hostname_param.value_as_string
+            user_data_variables={
+                "JitsiHostname": jitsi_hostname_param.value_as_string,
+                "JitsiPublicIP": eip.ref,
+                "LetsEncryptCertificateEmail": notification_email_param.value_as_string
             },
+            use_public_subnets=True,
             vpc=vpc
         )
-        asg.asg.target_group_arns = [
-            http_target_group.ref,
-            https_target_group.ref,
-            fallback_target_group.ref,
-            jitsi_target_group.ref
-        ]
 
         jitsi_http_ingress = aws_ec2.CfnSecurityGroupIngress(
             self,
@@ -303,8 +240,8 @@ class JitsiStack(Stack):
             "RecordSet",
             hosted_zone_name=f"{route_53_hosted_zone_name_param.value_as_string}.",
             name=jitsi_hostname_param.value_as_string,
-            resource_records=[ nlb.attr_dns_name ],
-            type="CNAME"
+            resource_records=[ eip.ref ],
+            type="A"
         )
         record_set.add_property_override("TTL", 60)
 

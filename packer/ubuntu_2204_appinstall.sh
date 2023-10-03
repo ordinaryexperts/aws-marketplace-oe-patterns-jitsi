@@ -156,10 +156,10 @@ apt-get install -y fonts-lato libruby3.0 rake ruby ruby-hocon ruby-net-telnet ru
 apt-get install -y libevent-2.1.7 libunbound8
 
 # Pin down a specific version
-# as of 2023-07-07, this is the latest stable release
+# as of 2023-10-02, this is the latest stable release
 # https://jitsi.org/blog/jitsi-meet-stable-releases-now-more-discoverable/
 # apt-cache madison jitsi-meet
-VERSION='2.0.8719-1'
+VERSION='2.0.8960-1'
 apt-get -y install nginx debconf-utils gnupg2 uuid-runtime
 apt-get install -y liblua5.1-0-dev ssl-cert
 apt install apt-transport-https

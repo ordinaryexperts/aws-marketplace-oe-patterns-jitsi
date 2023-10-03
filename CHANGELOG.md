@@ -1,11 +1,10 @@
 # Unreleased
 
-* Upgrading to Jitsi version 2.0.8719-1
+* Upgrading to Jitsi version 2.0.8960-1
 * Upgrading to devenv container
 * Upgrading to Ubuntu 22.04
 * Upgrading to ASG common library (changes parameter names)
 * Upgrade to CDK version 2.44.0
-* Adding NLB + Amazon Certificate Manager support
 * Adding nginx logs to CloudWatch
 
 2.2.0
