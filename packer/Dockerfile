@@ -1,6 +1,7 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 ENV IN_DOCKER=true
-COPY setup.sh /tmp/setup.sh
-RUN bash /tmp/setup.sh
-RUN rm -f /tmp/setup.sh
+
+COPY ubuntu_2204_appinstall.sh /tmp/ubuntu_2204_appinstall.sh
+RUN bash /tmp/ubuntu_2204_appinstall.sh
+RUN rm -f /tmp/ubuntu_2204_appinstall.sh
