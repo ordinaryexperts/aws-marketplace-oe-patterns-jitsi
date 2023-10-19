@@ -1,6 +1,7 @@
 ---
-# "Product ID": "OE_PATTERNS_JITSI_{{version}}"
-# "Product Code": "OE_PATTERNS_JITSI_{{version}}"
+"Product Slug": "jitsi"
+"Product ID": "ac194df3-6564-4b73-933a-99a8d35dac92"
+"Product Code": "a6sii3ist343j507uju6u0h3m"
 "Accessibility": "Public"
 "SKU": "OE_PATTERNS_JITSI"
 "Software by": "Ordinary Experts"
@@ -34,7 +35,7 @@ This template allows customization of the Jitsi Meet interface and allows Jitsi 
 "Architecture": "x86_64"
 "AFI": ""
 "Operating System": "UBUNTU"
-"Operating System Version": "18.04"
+"Operating System Version": "22.04"
 "Operating System Username": "ubuntu"
 "PIOPS Total": ""
 "AWS Services Required": "Amazon EC2, Amazon VPC, Amazon IAM, Amazon SNS, Amazon CloudFormation"
