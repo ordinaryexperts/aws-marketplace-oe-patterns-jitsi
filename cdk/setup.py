@@ -1,15 +1,13 @@
 import setuptools
 
-
 with open("README.md") as fp:
     long_description = fp.read()
 
-
-CDK_VERSION="1.87.1"
+CDK_VERSION="2.44.0"
 
 setuptools.setup(
     name="jitsi",
-    version="0.0.1",
+    version="2.2.0",
 
     description="AWS Marketplace pattern for Jitsi video conference by Ordinary Experts.",
     long_description=long_description,
@@ -21,15 +19,9 @@ setuptools.setup(
     packages=setuptools.find_packages(where="jitsi"),
 
     install_requires=[
-        f"aws-cdk.aws-autoscaling=={CDK_VERSION}",
-        f"aws-cdk.aws-cloudwatch=={CDK_VERSION}",
-        f"aws-cdk.aws-ec2=={CDK_VERSION}",
-        f"aws-cdk.aws-elasticloadbalancingv2=={CDK_VERSION}",
-        f"aws-cdk.aws-iam=={CDK_VERSION}",
-        f"aws-cdk.aws-route53=={CDK_VERSION}",
-        f"aws-cdk.aws-sns=={CDK_VERSION}",
-        f"aws-cdk.core=={CDK_VERSION}",
-        f"oe-patterns-cdk-common@git+https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-cdk-common@2.0.1"
+        f"aws-cdk-lib=={CDK_VERSION}",
+        f"constructs>=10.0.0,<11.0.0",
+        f"oe-patterns-cdk-common@git+https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-cdk-common@3.15.0"
     ],
 
     python_requires=">=3.6",
