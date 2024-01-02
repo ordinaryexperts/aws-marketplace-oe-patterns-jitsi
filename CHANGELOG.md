@@ -1,5 +1,7 @@
 # Unreleased
 
+3.0.0
+-----
 * Upgrading to Jitsi version 2.0.8960-1
 * Upgrading to devenv container
 * Upgrading to Ubuntu 22.04
