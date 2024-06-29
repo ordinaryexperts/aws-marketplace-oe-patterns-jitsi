@@ -3,7 +3,7 @@ SCRIPT_PREINSTALL=ubuntu_2004_2204_preinstall.sh
 SCRIPT_POSTINSTALL=ubuntu_2004_2204_postinstall.sh
 
 # preinstall steps
-apt-get update && apt-get -y install curl
+apt-get update && apt-get -y install curl s3fs
 curl -O "https://raw.githubusercontent.com/ordinaryexperts/aws-marketplace-utilities/$SCRIPT_VERSION/packer_provisioning_scripts/$SCRIPT_PREINSTALL"
 chmod +x $SCRIPT_PREINSTALL
 ./$SCRIPT_PREINSTALL
@@ -101,42 +101,6 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
             "log_group_name": "ASG_SYSTEM_LOG_GROUP_PLACEHOLDER",
             "log_stream_name": "{instance_id}-/var/log/amazon/ssm/errors.log",
             "timezone": "UTC"
-          },
-          {
-            "file_path": "/var/log/nginx/error.log",
-            "log_group_name": "ASG_APP_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/nginx/error.log",
-            "timezone": "UTC"
-          },
-          {
-            "file_path": "/var/log/nginx/access.log",
-            "log_group_name": "ASG_APP_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/nginx/access.log",
-            "timezone": "UTC"
-          },
-          {
-            "file_path": "/var/log/jitsi/jicofo.log",
-            "log_group_name": "ASG_APP_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/jitsi/jicofo.log",
-            "timezone": "UTC"
-          },
-          {
-            "file_path": "/var/log/jitsi/jvb.log",
-            "log_group_name": "ASG_APP_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/jitsi/jvb.log",
-            "timezone": "UTC"
-          },
-          {
-            "file_path": "/var/log/prosody/prosody.err",
-            "log_group_name": "ASG_APP_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/prosody/prosody.err",
-            "timezone": "UTC"
-          },
-          {
-            "file_path": "/var/log/prosody/prosody.log",
-            "log_group_name": "ASG_APP_LOG_GROUP_PLACEHOLDER",
-            "log_stream_name": "{instance_id}-/var/log/prosody/prosody.log",
-            "timezone": "UTC"
           }
         ]
       }
@@ -146,42 +110,73 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 }
 EOF
 
-# expect - for update prosody passwd
-apt-get install -y expect
+#
+# Jitsi configuration
+#
+JITSI_VERSION=stable-9457-2
 
-# ruby
-apt-get install -y fonts-lato libruby3.0 rake ruby ruby-hocon ruby-net-telnet ruby-rubygems ruby-webrick ruby-xmlrpc ruby3.0 rubygems-integration
+cd /root
 
-# libunbound
-apt-get install -y libevent-2.1.7 libunbound8
+# install Docker
+curl https://get.docker.com -o install-docker.sh
+sh install-docker.sh
 
-# Pin down a specific version
-# as of 2023-10-02, this is the latest stable release
-# https://jitsi.org/blog/jitsi-meet-stable-releases-now-more-discoverable/
-# apt-cache madison jitsi-meet
-VERSION='2.0.8960-1'
-apt-get -y install nginx debconf-utils gnupg2 uuid-runtime
-apt-get install -y liblua5.1-0-dev ssl-cert
-apt install apt-transport-https
+wget $(curl -s https://api.github.com/repos/jitsi/docker-jitsi-meet/releases/tags/$JITSI_VERSION | grep 'zip' | cut -d\" -f4)
+unzip $JITSI_VERSION
+mv jitsi-docker-jitsi-meet-* jitsi-docker-jitsi-meet
+cd jitsi-docker-jitsi-meet
+docker compose pull
+cd /root
 
-# disable default site
-rm /etc/nginx/sites-enabled/default
+pip install boto3
+cat <<EOF > /root/check-secrets.py
+#!/usr/bin/env python3
 
-# prosody
-wget https://prosody.im/files/prosody-debian-packages.key -O- | apt-key add -
-echo deb http://packages.prosody.im/debian $(lsb_release -sc) main | tee -a /etc/apt/sources.list.d/prosody-dev.list > /dev/null
+import boto3
+import json
+import subprocess
+import sys
+import uuid
 
-# jitsi
-curl -sL https://download.jitsi.org/jitsi-key.gpg.key | gpg --dearmor | tee /usr/share/keyrings/jitsi-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/" | tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
-apt-get update
-rm -rf /var/cache/apt/archives/*.deb
-apt-get -y install --download-only jitsi-meet=${VERSION}
+region_name = sys.argv[1]
+arn = sys.argv[2]
 
-mkdir /root/jitsi-debs
-mv /var/cache/apt/archives/*.deb /root/jitsi-debs
+client = boto3.client("secretsmanager", region_name=region_name)
+response = client.get_secret_value(
+  SecretId=arn
+)
+current_secret = json.loads(response["SecretString"])
+needs_update = False
 
-# not configuring firewall with ufw in favor of AWS security groups
+if 'password' in current_secret:
+    needs_update = True
+    del current_secret['password']
+if 'username' in current_secret:
+    needs_update = True
+    del current_secret['username']
+NEEDED_SECRETS_WITH_SIMILAR_REQUIREMENTS = [
+    "JICOFO_AUTH_PASSWORD",
+    "JVB_AUTH_PASSWORD",
+    "JIGASI_XMPP_PASSWORD",
+    "JIBRI_RECORDER_PASSWORD",
+    "JIBRI_XMPP_PASSWORD"
+]
+for secret in NEEDED_SECRETS_WITH_SIMILAR_REQUIREMENTS:
+  if not secret in current_secret:
+    needs_update = True
+    cmd = "random_value=\$(seed=\$(date +%s%N); tr -dc '[:alnum:]' < /dev/urandom | head -c 16; echo \$seed | sha256sum | awk '{print substr(\$1, 1, 16)}'); echo \$random_value"
+    output = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode('utf-8').strip()
+    current_secret[secret] = output
+if needs_update:
+  client.update_secret(
+    SecretId=arn,
+    SecretString=json.dumps(current_secret)
+  )
+else:
+  print('Secrets already generated - no action needed.')
+EOF
+chown root:root /root/check-secrets.py
+chmod 744 /root/check-secrets.py
 
 # post install steps
 curl -O "https://raw.githubusercontent.com/ordinaryexperts/aws-marketplace-utilities/$SCRIPT_VERSION/packer_provisioning_scripts/$SCRIPT_POSTINSTALL"
