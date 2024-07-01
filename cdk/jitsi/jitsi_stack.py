@@ -361,6 +361,7 @@ class JitsiStack(Stack):
                 "ParameterGroups": [
                     *alb.metadata_parameter_group(),
                     *asg.metadata_parameter_group(),
+                    *assets_bucket.metadata_parameter_group(),
                     *dns.metadata_parameter_group(),
                     *secret.metadata_parameter_group(),
                     *vpc.metadata_parameter_group()
@@ -368,6 +369,7 @@ class JitsiStack(Stack):
                 "ParameterLabels": {
                     **alb.metadata_parameter_labels(),
                     **asg.metadata_parameter_labels(),
+                    **assets_bucket.metadata_parameter_labels(),
                     **dns.metadata_parameter_labels(),
                     **secret.metadata_parameter_labels(),
                     **vpc.metadata_parameter_labels()
