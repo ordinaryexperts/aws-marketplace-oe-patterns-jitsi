@@ -35,6 +35,7 @@ insert_logging_config "jvb" 399 "/root/jitsi-docker-jitsi-meet/docker-compose.ym
 insert_logging_config "jicofo" 316 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
 insert_logging_config "prosody" 183 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
 insert_logging_config "web" 6 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jibri" 5 "/root/jitsi-docker-jitsi-meet/jibri.yml"
 
 # TODO: why isn't this working in the AMI
 apt-get update && apt-get -y install s3fs
@@ -63,12 +64,6 @@ aws ssm get-parameter \
     --query Parameter.Value \
 | jq -r . > /opt/oe/patterns/instance.json
 
-JICOFO_AUTH_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JICOFO_AUTH_PASSWORD)
-JVB_AUTH_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JVB_AUTH_PASSWORD)
-JIGASI_XMPP_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JIGASI_XMPP_PASSWORD)
-JIBRI_RECORDER_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JIBRI_RECORDER_PASSWORD)
-JIBRI_XMPP_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JIBRI_XMPP_PASSWORD)
-
 cat <<EOF > /root/jitsi-docker-jitsi-meet/.env
 CONFIG=/s3/jitsi-meet-cfg
 HTTP_PORT=80
@@ -77,22 +72,16 @@ TZ=UTC
 PUBLIC_URL=https://${Hostname}
 JVB_ADVERTISE_IPS=$ip1,$ip2
 ENABLE_LETSENCRYPT=0
-# XMPP password for Jicofo client connections
-JICOFO_AUTH_PASSWORD=$JICOFO_AUTH_PASSWORD
-# XMPP password for JVB client connections
-JVB_AUTH_PASSWORD=$JVB_AUTH_PASSWORD
-# XMPP password for Jigasi MUC client connections
-JIGASI_XMPP_PASSWORD=$JIGASI_XMPP_PASSWORD
-# XMPP recorder password for Jibri client connections
-JIBRI_RECORDER_PASSWORD=$JIBRI_RECORDER_PASSWORD
-# XMPP password for Jibri client connections
-JIBRI_XMPP_PASSWORD=$JIBRI_XMPP_PASSWORD
 EOF
 
 cat <<EOF > /root/start.sh
 #!/usr/bin/env bash
 cd /root/jitsi-docker-jitsi-meet
-docker compose up -d
+if grep -q 'ENABLE_RECORDING=1' .env; then
+  docker compose -f docker-compose.yml -f jibri.yml up -d
+else
+  docker compose -f docker-compose.yml up -d
+fi
 EOF
 cat <<EOF > /root/stop.sh
 #!/usr/bin/env bash
@@ -124,59 +113,14 @@ WorkingDirectory=/root/jitsi-docker-jitsi-meet
 [Install]
 WantedBy=multi-user.target
 EOF
+
+rm -f /s3/jitsi-meet-cfg/web/custom-config.js
+rm -f /s3/jitsi-meet-cfg/web/custom-interface_config.js
+/root/append-config.py
+
 systemctl enable jitsi.service
 systemctl start jitsi.service
 success=$?
-
-# TODO
-# #
-# # customize Jitsi interface
-# #
-
-# INTERFACE_CONFIG=/usr/share/jitsi-meet/interface_config.js
-# JITSI_IMAGE_DIR=/usr/share/jitsi-meet/images
-# cp $INTERFACE_CONFIG $INTERFACE_CONFIG.default
-# echo "// Ordinary Experts Jitsi Patterns config overrides" >> $INTERFACE_CONFIG
-# echo "interfaceConfig.APP_NAME = '${JitsiInterfaceAppName}';" >> $INTERFACE_CONFIG
-# if [[ ! -z "${JitsiInterfaceBrandWatermark}" ]]; then
-#     echo "interfaceConfig.DEFAULT_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
-# fi
-# echo "interfaceConfig.DEFAULT_REMOTE_DISPLAY_NAME = '${JitsiInterfaceDefaultRemoteDisplayName}';" >> $INTERFACE_CONFIG
-# if [[ ! -z "${JitsiInterfaceBrandWatermark}" ]]; then
-#     echo "interfaceConfig.DEFAULT_WELCOME_PAGE_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
-# fi
-# echo "interfaceConfig.NATIVE_APP_NAME = '${JitsiInterfaceNativeAppName}';" >>  $INTERFACE_CONFIG
-# echo "interfaceConfig.SHOW_BRAND_WATERMARK = ${JitsiInterfaceShowBrandWatermark};" >> $INTERFACE_CONFIG
-# echo "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS = ${JitsiInterfaceShowWatermarkForGuests};" >> $INTERFACE_CONFIG
-# echo "interfaceConfig.TOOLBAR_BUTTONS = [ 'microphone', 'camera', 'closedcaptions', 'desktop', 'embedmeeting', 'fullscreen', 'fodeviceselection', 'hangup', 'profile', 'chat', 'etherpad', 'sharedvideo', 'settings', 'raisehand', 'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts', 'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone', 'security' ];" >> $INTERFACE_CONFIG
-# echo "interfaceConfig.DISABLE_VIDEO_BACKGROUND = true;" >> $INTERFACE_CONFIG
-
-# # brand watermark image
-# JITSI_BRAND_WATERMARK=${JitsiInterfaceBrandWatermark}
-# if [ ! -z "$JITSI_BRAND_WATERMARK" ];
-# then
-#     wget -O $JITSI_IMAGE_DIR/rightwatermark.png $JITSI_BRAND_WATERMARK
-# fi
-# echo "interfaceConfig.BRAND_WATERMARK_LINK = '${JitsiInterfaceBrandWatermarkLink}';" >> $INTERFACE_CONFIG
-# # watermark image
-# JITSI_WATERMARK=${JitsiInterfaceWatermark}
-# if [ ! -z "$JITSI_WATERMARK" ];
-# then
-#     cp $JITSI_IMAGE_DIR/watermark.png $JITSI_IMAGE_DIR/watermark.default.png
-#     wget -O $JITSI_IMAGE_DIR/watermark.png $JITSI_WATERMARK
-# fi
-# echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" >> $INTERFACE_CONFIG
-
-# sed -i 's/server_names_hash_bucket_size 64;/server_names_hash_bucket_size 128;/g' /etc/nginx/sites-available/${Hostname}.conf
-# sed -i '\|root /usr/share/jitsi-meet;|a \
-# \
-#     location = /elb-check {\
-#         access_log off;\
-#         return 200 '\''ok'\'';\
-#         add_header Content-Type text/plain;\
-#     }\
-# ' /etc/nginx/sites-available/${Hostname}.conf
-# rm -f /etc/nginx/sites-enabled/default
 
 #
 # cloudformation signal

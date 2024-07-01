@@ -155,11 +155,11 @@ if 'username' in current_secret:
     needs_update = True
     del current_secret['username']
 NEEDED_SECRETS_WITH_SIMILAR_REQUIREMENTS = [
-    "JICOFO_AUTH_PASSWORD",
-    "JVB_AUTH_PASSWORD",
-    "JIGASI_XMPP_PASSWORD",
-    "JIBRI_RECORDER_PASSWORD",
-    "JIBRI_XMPP_PASSWORD"
+    ".env:JICOFO_AUTH_PASSWORD",
+    ".env:JVB_AUTH_PASSWORD",
+    ".env:JIGASI_XMPP_PASSWORD",
+    ".env:JIBRI_RECORDER_PASSWORD",
+    ".env:JIBRI_XMPP_PASSWORD"
 ]
 for secret in NEEDED_SECRETS_WITH_SIMILAR_REQUIREMENTS:
   if not secret in current_secret:
@@ -177,6 +177,45 @@ else:
 EOF
 chown root:root /root/check-secrets.py
 chmod 744 /root/check-secrets.py
+
+cat <<EOF > /root/append-config.py
+#!/usr/bin/env python3
+
+import json
+import os
+with open('/opt/oe/patterns/instance.json', 'r') as file:
+    data = json.load(file)
+for key, value in data.items():
+    try:
+        file_path, varname = key.split(':')
+        # Check if file_path is a .js file
+        if os.path.splitext(file_path)[1] == '.js':
+            if file_path == 'interface_config.js':
+                output = f'interfaceConfig.{varname} = "{value}";'
+            elif file_path == 'config.js':
+                output = f'config.{varname} = "{value}";'
+            else:
+                output = f'{varname} = "{value}";'
+            file_path = f'/s3/jitsi-meet-cfg/web/custom-{file_path}'
+        else:
+            output = f'{varname}={value}'
+            file_path = f'/root/jitsi-docker-jitsi-meet/{file_path}'
+        # Ensure the directory exists
+        directory = os.path.dirname(file_path)
+        if directory and not os.path.exists(directory):
+            os.makedirs(directory)
+        # Check if file exists, if not create it
+        if not os.path.exists(file_path):
+            with open(file_path, 'w') as f:
+                pass  # Just create the file
+        # Append the output to the file
+        with open(file_path, 'a') as f:
+            f.write(output + '\n')
+    except Exception as e:
+        print(f'Error processing key {key}: {e}')
+EOF
+chown root:root /root/append-config.py
+chmod 744 /root/append-config.py
 
 # post install steps
 curl -O "https://raw.githubusercontent.com/ordinaryexperts/aws-marketplace-utilities/$SCRIPT_VERSION/packer_provisioning_scripts/$SCRIPT_POSTINSTALL"
