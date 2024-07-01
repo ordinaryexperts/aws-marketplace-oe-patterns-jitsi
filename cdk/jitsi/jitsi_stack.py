@@ -359,11 +359,17 @@ class JitsiStack(Stack):
             "OE::Patterns::TemplateVersion": template_version,
             "AWS::CloudFormation::Interface": {
                 "ParameterGroups": [
+                    *alb.metadata_parameter_group(),
                     *asg.metadata_parameter_group(),
+                    *dns.metadata_parameter_group(),
+                    *secret.metadata_parameter_group(),
                     *vpc.metadata_parameter_group()
                 ],
                 "ParameterLabels": {
+                    **alb.metadata_parameter_labels(),
                     **asg.metadata_parameter_labels(),
+                    **dns.metadata_parameter_labels(),
+                    **secret.metadata_parameter_labels(),
                     **vpc.metadata_parameter_labels()
                 }
             }
