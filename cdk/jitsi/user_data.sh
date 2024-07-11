@@ -36,14 +36,12 @@ insert_logging_config "jicofo" 316 "/root/jitsi-docker-jitsi-meet/docker-compose
 insert_logging_config "prosody" 183 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
 insert_logging_config "web" 6 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
 insert_logging_config "jibri" 5 "/root/jitsi-docker-jitsi-meet/jibri.yml"
+insert_logging_config "jigasi" 6 "/root/jitsi-docker-jitsi-meet/jigasi.yml"
+insert_logging_config "etherpad" 6 "/root/jitsi-docker-jitsi-meet/etherpad.yml"
 
-# TODO: why isn't this working in the AMI
-apt-get update && apt-get -y install s3fs
-
-mkdir /s3
-echo 's3fs#${AssetsBucket} /s3 fuse _netdev,allow_other,iam_role=auto 0 0' >> /etc/fstab
+echo 's3fs#${AssetsBucket} /s3 fuse _netdev,allow_other,nonempty,iam_role=auto 0 0' >> /etc/fstab
+rm -rf /s3 && mkdir /s3
 mount -a
-
 mkdir -p /s3/jitsi-meet-cfg/{web,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}
 
 # find NLB static IPs
@@ -77,11 +75,17 @@ EOF
 cat <<EOF > /root/start.sh
 #!/usr/bin/env bash
 cd /root/jitsi-docker-jitsi-meet
-if grep -q 'ENABLE_RECORDING=1' .env; then
-  docker compose -f docker-compose.yml -f jibri.yml up -d
-else
-  docker compose -f docker-compose.yml up -d
+DOCKER_FILES="-f docker-compose.yml"
+if grep -q '^ENABLE_RECORDING=1' .env; then
+  DOCKER_FILES="\$DOCKER_FILES -f jibri.yml"
 fi
+if grep -q '^JIGASI_SIP_URI=' .env; then
+  DOCKER_FILES="\$DOCKER_FILES -f jigasi.yml"
+fi
+if grep -q '^ETHERPAD_URL_BASE=' .env; then
+  DOCKER_FILES="\$DOCKER_FILES -f etherpad.yml"
+fi
+docker compose \$DOCKER_FILES up -d
 EOF
 cat <<EOF > /root/stop.sh
 #!/usr/bin/env bash
@@ -90,8 +94,7 @@ docker compose down
 EOF
 cat <<EOF > /root/restart.sh
 #!/usr/bin/env bash
-cd /root/jitsi-docker-jitsi-meet
-docker compose restart
+/root/stop.sh && /root/start.sh
 EOF
 chmod 755 /root/start.sh
 chmod 755 /root/stop.sh

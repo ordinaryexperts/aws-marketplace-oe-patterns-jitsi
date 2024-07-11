@@ -3,7 +3,7 @@ SCRIPT_PREINSTALL=ubuntu_2004_2204_preinstall.sh
 SCRIPT_POSTINSTALL=ubuntu_2004_2204_postinstall.sh
 
 # preinstall steps
-apt-get update && apt-get -y install curl s3fs
+apt-get update && apt-get -y install curl
 curl -O "https://raw.githubusercontent.com/ordinaryexperts/aws-marketplace-utilities/$SCRIPT_VERSION/packer_provisioning_scripts/$SCRIPT_PREINSTALL"
 chmod +x $SCRIPT_PREINSTALL
 ./$SCRIPT_PREINSTALL
@@ -117,6 +117,9 @@ JITSI_VERSION=stable-9457-2
 
 cd /root
 
+# s3fs
+apt-get update && apt-get -y install s3fs
+
 # install Docker
 curl https://get.docker.com -o install-docker.sh
 sh install-docker.sh
@@ -125,7 +128,7 @@ wget $(curl -s https://api.github.com/repos/jitsi/docker-jitsi-meet/releases/tag
 unzip $JITSI_VERSION
 mv jitsi-docker-jitsi-meet-* jitsi-docker-jitsi-meet
 cd jitsi-docker-jitsi-meet
-docker compose pull
+docker compose -f docker-compose.yml -f jibri.yml -f etherpad.yml -f jigasi.yml pull
 cd /root
 
 pip install boto3
