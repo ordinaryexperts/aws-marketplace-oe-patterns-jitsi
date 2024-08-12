@@ -377,18 +377,34 @@ class JitsiStack(Stack):
         )
 
         # AWS::CloudFormation::Interface
+        parameter_groups = [
+            {
+                "Label": {
+                    "default": "Application Config"
+                },
+                "Parameters": [
+                    enable_recording_param.logical_id,
+                    enable_etherpad_param.logical_id
+                ]
+            }
+        ]
+        parameter_groups += alb.metadata_parameter_group()
+        parameter_groups += assets_bucket.metadata_parameter_group()
+        parameter_groups += asg.metadata_parameter_group()
+        parameter_groups += dns.metadata_parameter_group()
+        parameter_groups += secret.metadata_parameter_group()
+        parameter_groups += vpc.metadata_parameter_group()
         self.template_options.metadata = {
             "OE::Patterns::TemplateVersion": template_version,
             "AWS::CloudFormation::Interface": {
-                "ParameterGroups": [
-                    *alb.metadata_parameter_group(),
-                    *asg.metadata_parameter_group(),
-                    *assets_bucket.metadata_parameter_group(),
-                    *dns.metadata_parameter_group(),
-                    *secret.metadata_parameter_group(),
-                    *vpc.metadata_parameter_group()
-                ],
+                "ParameterGroups": parameter_groups,
                 "ParameterLabels": {
+                    enable_recording_param.logical_id: {
+                        "default": "Enable Server-Side Recording"
+                    },
+                    enable_etherpad_param.logical_id: {
+                        "default": "Enable Etherpad Integration"
+                    },
                     **alb.metadata_parameter_labels(),
                     **asg.metadata_parameter_labels(),
                     **assets_bucket.metadata_parameter_labels(),
