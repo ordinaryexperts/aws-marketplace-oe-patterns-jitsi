@@ -52,7 +52,70 @@ ip_array=($ips)
 ip1=${!ip_array[0]}
 ip2=${!ip_array[1]}
 
-/root/check-secrets.py ${AWS::Region} ${SecretArn}
+cat <<EOF > /root/check-secrets.py
+#!/usr/bin/env python3
+
+import boto3
+import json
+import subprocess
+import sys
+import uuid
+
+region_name = sys.argv[1]
+arn = sys.argv[2]
+enable_recording = sys.argv[3]
+enable_etherpad = sys.argv[4]
+
+client = boto3.client("secretsmanager", region_name=region_name)
+response = client.get_secret_value(
+  SecretId=arn
+)
+current_secret = json.loads(response["SecretString"])
+needs_update = False
+
+if 'password' in current_secret:
+    needs_update = True
+    del current_secret['password']
+if 'username' in current_secret:
+    needs_update = True
+    del current_secret['username']
+NEEDED_SECRETS_WITH_SIMILAR_REQUIREMENTS = [
+    ".env:JICOFO_AUTH_PASSWORD",
+    ".env:JVB_AUTH_PASSWORD",
+    ".env:JIGASI_XMPP_PASSWORD",
+    ".env:JIBRI_RECORDER_PASSWORD",
+    ".env:JIBRI_XMPP_PASSWORD"
+]
+for secret in NEEDED_SECRETS_WITH_SIMILAR_REQUIREMENTS:
+  if not secret in current_secret:
+    needs_update = True
+    cmd = "random_value=\$(seed=\$(date +%s%N); tr -dc '[:alnum:]' < /dev/urandom | head -c 32; echo \$seed | sha256sum | awk '{print substr(\$1, 1, 32)}'); echo \$random_value"
+    output = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode('utf-8').strip()
+    current_secret[secret] = output
+if enable_recording == 'true' and current_secret.get('.env:ENABLE_RECORDING') != '1':
+  needs_update = True
+  current_secret['.env:ENABLE_RECORDING'] = '1'
+if enable_recording == 'false' and current_secret.get('.env:ENABLE_RECORDING') == '1':
+  needs_update = True
+  del current_secret['.env:ENABLE_RECORDING']
+if enable_etherpad == 'true' and current_secret.get('.env:ETHERPAD_URL_BASE') != 'http://etherpad.meet.jitsi:9001':
+  needs_update = True
+  current_secret['.env:ETHERPAD_URL_BASE'] = 'http://etherpad.meet.jitsi:9001'
+if enable_etherpad == 'false' and current_secret.get('.env:ETHERPAD_URL_BASE') == 'http://etherpad.meet.jitsi:9001':
+  needs_update = True
+  del current_secret['.env:ETHERPAD_URL_BASE']
+if needs_update:
+  client.update_secret(
+    SecretId=arn,
+    SecretString=json.dumps(current_secret)
+  )
+else:
+  print('Secrets already generated - no action needed.')
+EOF
+chown root:root /root/check-secrets.py
+chmod 744 /root/check-secrets.py
+
+/root/check-secrets.py ${AWS::Region} ${SecretArn} ${EnableRecording} ${EnableEtherpad}
 
 mkdir -p /opt/oe/patterns
 SECRET_NAME=$(aws secretsmanager describe-secret --secret-id ${SecretArn} | jq -r .Name)
