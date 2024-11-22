@@ -1,6 +1,6 @@
-SCRIPT_VERSION=1.3.0
-SCRIPT_PREINSTALL=ubuntu_2004_2204_preinstall.sh
-SCRIPT_POSTINSTALL=ubuntu_2004_2204_postinstall.sh
+SCRIPT_VERSION=1.6.0
+SCRIPT_PREINSTALL=ubuntu_2204_2404_preinstall.sh
+SCRIPT_POSTINSTALL=ubuntu_2204_2404_postinstall.sh
 
 # preinstall steps
 apt-get update && apt-get -y install curl
@@ -113,7 +113,9 @@ EOF
 #
 # Jitsi configuration
 #
-JITSI_VERSION=stable-9457-2
+
+# https://github.com/jitsi/docker-jitsi-meet/releases/tag/stable-9779 10/22/2024
+JITSI_VERSION=stable-9779
 
 cd /root
 
@@ -143,6 +145,8 @@ import uuid
 
 region_name = sys.argv[1]
 arn = sys.argv[2]
+enable_recording = sys.argv[3]
+enable_etherpad = sys.argv[4]
 
 client = boto3.client("secretsmanager", region_name=region_name)
 response = client.get_secret_value(
@@ -167,9 +171,21 @@ NEEDED_SECRETS_WITH_SIMILAR_REQUIREMENTS = [
 for secret in NEEDED_SECRETS_WITH_SIMILAR_REQUIREMENTS:
   if not secret in current_secret:
     needs_update = True
-    cmd = "random_value=\$(seed=\$(date +%s%N); tr -dc '[:alnum:]' < /dev/urandom | head -c 16; echo \$seed | sha256sum | awk '{print substr(\$1, 1, 16)}'); echo \$random_value"
+    cmd = "random_value=\$(seed=\$(date +%s%N); tr -dc '[:alnum:]' < /dev/urandom | head -c 32; echo \$seed | sha256sum | awk '{print substr(\$1, 1, 32)}'); echo \$random_value"
     output = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode('utf-8').strip()
     current_secret[secret] = output
+if enable_recording == 'true' and current_secret.get('.env:ENABLE_RECORDING') != '1':
+  needs_update = True
+  current_secret['.env:ENABLE_RECORDING'] = '1'
+if enable_recording == 'false' and current_secret.get('.env:ENABLE_RECORDING') == '1':
+  needs_update = True
+  del current_secret['.env:ENABLE_RECORDING']
+if enable_etherpad == 'true' and current_secret.get('.env:ETHERPAD_URL_BASE') != 'http://etherpad.meet.jitsi:9001':
+  needs_update = True
+  current_secret['.env:ETHERPAD_URL_BASE'] = 'http://etherpad.meet.jitsi:9001'
+if enable_etherpad == 'false' and current_secret.get('.env:ETHERPAD_URL_BASE') == 'http://etherpad.meet.jitsi:9001':
+  needs_update = True
+  del current_secret['.env:ETHERPAD_URL_BASE']
 if needs_update:
   client.update_secret(
     SecretId=arn,
