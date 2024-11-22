@@ -1,4 +1,8 @@
 # Unreleased
+------------
+* Upgrading to docker-based deployment
+* Adding EnableEtherpad parameter
+* Adding EnableRecording parameter
 
 3.0.0
 -----
@@ -8,9 +12,6 @@
 * Upgrading to ASG common library (changes parameter names)
 * Upgrade to CDK version 2.44.0
 * Adding nginx logs to CloudWatch
-* Upgrading to docker-based deployment
-* Adding EnableEtherpad parameter
-* Adding EnableRecording parameter
 
 2.2.0
 -----
