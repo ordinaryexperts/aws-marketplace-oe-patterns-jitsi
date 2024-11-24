@@ -1,8 +1,9 @@
 # Unreleased
 ------------
 * Upgrading to docker-based deployment
-* Adding EnableEtherpad parameter
-* Adding EnableRecording parameter
+* Adding CustomDotEnvParameterArn parameter
+* Adding CustomConfigJsParameterArn parameter
+* Adding CustomInterfaceConfigJsParameterArn parameter
 
 3.0.0
 -----
