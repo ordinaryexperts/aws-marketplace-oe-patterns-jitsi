@@ -166,7 +166,8 @@ class JitsiStack(Stack):
             user_data_contents=user_data,
             user_data_variables={
                 "Hostname": dns.hostname(),
-                "SecretArn": secret.secret_arn()
+                "SecretArn": secret.secret_arn(),
+                "AssetsBucket": assets_bucket.bucket_name()
             },
             use_public_subnets=True,
             vpc=vpc
