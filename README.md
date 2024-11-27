@@ -25,9 +25,9 @@ See the [Ordinary Experts AWS Marketplace Product Page](https://ordinaryexperts.
 
 The AWS stack uses Amazon Elastic Compute Cloud (Amazon EC2), Amazon Network Load Balancer (NLB) and Application Load Balancer (ALB), Amazon Virtual Public Cloud (Amazon VPC), Amazon CloudWatch, Amazon S3, Amazon Secrets Manager, Amazon Systems Manager Parameter Store, and Amazon Route 53.
 
-The template places an EC2 instance in a private subnet of the VPC, and deploys an NLB and secures port access to 80, 443, 4443 and 1000 via an EC2 Security Group. Users can optionally have the template create a brand new VPC, or specify an existing VPC ID in their AWS account into which to deploy, including subnet identification parameters. Users are also able to lock down public access of the service to an ingress CIDR Block, in case they want to restrict access to a range of IP addresses (such as corporate VPN IPs).
+The template places an EC2 instance in a private subnet of the VPC, and deploys an NLB (for UDP and passing HTTP/S to ALB) and ALB (for HTTP/S) and secures port access to 80, 443, 10000, and 20000-20040 via an EC2 Security Group. Users can optionally have the template create a brand new VPC, or specify an existing VPC ID in their AWS account into which to deploy, including subnet identification parameters. Users are also able to lock down public access of the service to an ingress CIDR Block, in case they want to restrict access to a range of IP addresses (such as corporate VPN IPs).
 
-Users provide an AWS Route 53 Hosted Zone Name and the stack will automatically manage a DNS record for the provided hostname parameter.
+Users provide an AWS Route 53 Hosted Zone Name and the stack will automatically manage a DNS record for the provided hostname parameter to point to the NLB.  SSL is done by specifying an ACM certificate ARN.
 
 There are three files that control the configuration of Jitsi, according to the [self-hosting guide](https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-docker), `.env`, `custom-config.js`, and `custom-interface_config.js`.
 
