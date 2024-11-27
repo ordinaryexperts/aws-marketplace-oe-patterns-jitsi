@@ -6,158 +6,167 @@ sed -i 's/ASG_SYSTEM_LOG_GROUP_PLACEHOLDER/${AsgSystemLogGroup}/g' /opt/aws/amaz
 systemctl enable amazon-cloudwatch-agent
 systemctl start amazon-cloudwatch-agent
 
-#
-# Jitsi configuration
-#
-
-# setup FQDN *before* install
-echo "127.0.0.1 ${JitsiHostname}" >> /etc/hosts
-
-# preselect Jitsi install questions
-echo "jitsi-videobridge2 jitsi-videobridge/jvb-hostname string ${JitsiHostname}" | debconf-set-selections
-echo "jitsi-meet-web-config jitsi-meet/cert-choice select Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)" | debconf-set-selections
-echo "jitsi-meet-web-config jitsi-meet/jaas-choice boolean false" | debconf-set-selections
-
-# jitsi-meet was downloaded but not installed during AMI build...
-dpkg -i /root/jitsi-debs/lua*.deb
-dpkg -i /root/jitsi-debs/prosody*.deb
-dpkg -i /root/jitsi-debs/jitsi-videobridge*.deb
-dpkg -i /root/jitsi-debs/jitsi-meet-web-config*.deb
-dpkg -i /root/jitsi-debs/*.deb
-
-# configure Jitsi behind NAT Gateway
-JVB_CONFIG=/etc/jitsi/videobridge/sip-communicator.properties
-sed -i 's/^org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES/#&/' $JVB_CONFIG
-LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
-PUBLIC_IP="${JitsiPublicIP}"
-echo "org.ice4j.ice.harvest.NAT_HARVESTER_LOCAL_ADDRESS=$LOCAL_IP" >> $JVB_CONFIG
-echo "org.ice4j.ice.harvest.NAT_HARVESTER_PUBLIC_ADDRESS=$PUBLIC_IP" >> $JVB_CONFIG
-
-# raise systemd limits
-sed -i 's/^#DefaultLimitNOFILE=.*$/DefaultLimitNOFILE=65000/' /etc/systemd/system.conf
-sed -i 's/^#DefaultLimitNPROC=.*$/DefaultLimitNPROC=65000/' /etc/systemd/system.conf
-sed -i 's/^#DefaultTasksMax=.*$/DefaultTasksMax=65000/' /etc/systemd/system.conf
-
-# prosody fix
-chown prosody:prosody /etc/prosody/certs/localhost.key
-
-# https://community.jitsi.org/t/saslerror-using-scram-sha-1-not-authorized/120768/5
-JVB_PASSWORD=$(grep -oP 'org.jitsi.videobridge.xmpp.user.shard.PASSWORD=\K.*' /etc/jitsi/videobridge/sip-communicator.properties)
-cat <<EOF > /root/update-prosody-jvb-password.expect
-#!/usr/bin/expect
-set timeout -1
-spawn prosodyctl passwd jvb@auth.${JitsiHostname}
-expect "Enter new password:" {
-    send "$JVB_PASSWORD\r"
-    exp_continue
-} "Retype new password:" {
-    send "$JVB_PASSWORD\r"
-}
-expect eof
-EOF
-chmod +x /root/update-prosody-jvb-password.expect
-/root/update-prosody-jvb-password.expect
-
-service prosody restart
-service jicofo restart
-
-systemctl daemon-reload
-systemctl restart jitsi-videobridge2
-
-#
-# customize Jitsi interface
-#
-
-INTERFACE_CONFIG=/usr/share/jitsi-meet/interface_config.js
-JITSI_IMAGE_DIR=/usr/share/jitsi-meet/images
-cp $INTERFACE_CONFIG $INTERFACE_CONFIG.default
-echo "// Ordinary Experts Jitsi Patterns config overrides" >> $INTERFACE_CONFIG
-echo "interfaceConfig.APP_NAME = '${JitsiInterfaceAppName}';" >> $INTERFACE_CONFIG
-if [[ ! -z "${JitsiInterfaceBrandWatermark}" ]]; then
-    echo "interfaceConfig.DEFAULT_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
-fi
-echo "interfaceConfig.DEFAULT_REMOTE_DISPLAY_NAME = '${JitsiInterfaceDefaultRemoteDisplayName}';" >> $INTERFACE_CONFIG
-if [[ ! -z "${JitsiInterfaceBrandWatermark}" ]]; then
-    echo "interfaceConfig.DEFAULT_WELCOME_PAGE_LOGO_URL = '${JitsiInterfaceBrandWatermark}';" >> $INTERFACE_CONFIG
-fi
-echo "interfaceConfig.NATIVE_APP_NAME = '${JitsiInterfaceNativeAppName}';" >>  $INTERFACE_CONFIG
-echo "interfaceConfig.SHOW_BRAND_WATERMARK = ${JitsiInterfaceShowBrandWatermark};" >> $INTERFACE_CONFIG
-echo "interfaceConfig.SHOW_WATERMARK_FOR_GUESTS = ${JitsiInterfaceShowWatermarkForGuests};" >> $INTERFACE_CONFIG
-echo "interfaceConfig.TOOLBAR_BUTTONS = [ 'microphone', 'camera', 'closedcaptions', 'desktop', 'embedmeeting', 'fullscreen', 'fodeviceselection', 'hangup', 'profile', 'chat', 'etherpad', 'sharedvideo', 'settings', 'raisehand', 'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts', 'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone', 'security' ];" >> $INTERFACE_CONFIG
-echo "interfaceConfig.DISABLE_VIDEO_BACKGROUND = true;" >> $INTERFACE_CONFIG
-
-# brand watermark image
-JITSI_BRAND_WATERMARK=${JitsiInterfaceBrandWatermark}
-if [ ! -z "$JITSI_BRAND_WATERMARK" ];
-then
-    wget -O $JITSI_IMAGE_DIR/rightwatermark.png $JITSI_BRAND_WATERMARK
-fi
-echo "interfaceConfig.BRAND_WATERMARK_LINK = '${JitsiInterfaceBrandWatermarkLink}';" >> $INTERFACE_CONFIG
-# watermark image
-JITSI_WATERMARK=${JitsiInterfaceWatermark}
-if [ ! -z "$JITSI_WATERMARK" ];
-then
-    cp $JITSI_IMAGE_DIR/watermark.png $JITSI_IMAGE_DIR/watermark.default.png
-    wget -O $JITSI_IMAGE_DIR/watermark.png $JITSI_WATERMARK
-fi
-echo "interfaceConfig.JITSI_WATERMARK_LINK = '${JitsiInterfaceWatermarkLink}';" >> $INTERFACE_CONFIG
-
-sed -i 's/server_names_hash_bucket_size 64;/server_names_hash_bucket_size 128;/g' /etc/nginx/sites-available/${JitsiHostname}.conf
-sed -i '\|root /usr/share/jitsi-meet;|a \
-\
-    location = /elb-check {\
-        access_log off;\
-        return 200 '\''ok'\'';\
-        add_header Content-Type text/plain;\
-    }\
-' /etc/nginx/sites-available/${JitsiHostname}.conf
-rm -f /etc/nginx/sites-enabled/default
-
-# error handling
 function error_exit
 {
     cfn-signal --exit-code 1 --stack ${AWS::StackName} --resource Asg --region ${AWS::Region}
     exit 1
 }
 
-instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-max_attach_tries=12
-attach_tries=0
-success=1
-while [[ $success != 0 ]]; do
-    if [ $attach_tries -gt $max_attach_tries ]; then
-        error_exit
-    fi
-    sleep 10
-    echo aws ec2 associate-address --region ${AWS::Region} --instance-id $instance_id --allocation-id ${Eip.AllocationId}
-    aws ec2 associate-address --region ${AWS::Region} --instance-id $instance_id --allocation-id ${Eip.AllocationId}
-    success=$?
-    ((attach_tries++))
-done
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/instance-id)
 
-# generate Let's Encrypt certificate
-#   https://stackoverflow.com/questions/57904900/aws-cloudformation-template-with-letsencrypt-ssl-certificate
-LETSENCRYPTEMAIL="${LetsEncryptCertificateEmail}"
-if [ -z "$LETSENCRYPTEMAIL" ]; then
-    # no Let's Encrypt email - modify the install script not to use it
-    sed -i 's/--agree-tos --email $EMAIL/--agree-tos --register-unsafely-without-email/g' /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
-    LETSENCRYPTEMAIL="dummy@example.com"
+function insert_logging_config() {
+  local SERVICE=$1
+  local LINE_NUMBER=$2
+  local FILE=$3
+
+  TEXT=$(cat <<EOF
+        logging:
+            driver: awslogs
+            options:
+                awslogs-group: ${AsgAppLogGroup}
+                awslogs-stream: $INSTANCE_ID-${!SERVICE}
+EOF
+  )
+  TEMP_FILE=$(mktemp)
+  awk -v n="$LINE_NUMBER" -v text="$TEXT" 'NR == n {print text} {print}' "$FILE" > "$TEMP_FILE"
+  mv "$TEMP_FILE" "$FILE"
+}
+insert_logging_config "jvb" 419 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jicofo" 332 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "prosody" 187 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "web" 6 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jibri" 5 "/root/jitsi-docker-jitsi-meet/jibri.yml"
+insert_logging_config "jigasi" 6 "/root/jitsi-docker-jitsi-meet/jigasi.yml"
+insert_logging_config "etherpad" 6 "/root/jitsi-docker-jitsi-meet/etherpad.yml"
+insert_logging_config "transcriber" 5 "/root/jitsi-docker-jitsi-meet/transcriber.yml"
+
+echo 's3fs#${AssetsBucket} /s3 fuse _netdev,allow_other,nonempty,iam_role=${IamRole} 0 0' >> /etc/fstab
+rm -rf /s3 && mkdir /s3
+mount -a
+mkdir -p /s3/jitsi-meet-cfg/{web,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}
+
+# find NLB static IPs
+dns_name="${Hostname}"
+ips=$(dig +short $dns_name)
+# Parse the IPs
+ip_array=($ips)
+ip1=${!ip_array[0]}
+ip2=${!ip_array[1]}
+
+/root/check-secrets.py ${AWS::Region} ${SecretArn}
+
+mkdir -p /opt/oe/patterns
+SECRET_NAME=$(aws secretsmanager describe-secret --secret-id ${SecretArn} | jq -r .Name)
+aws ssm get-parameter \
+    --name "/aws/reference/secretsmanager/$SECRET_NAME" \
+    --with-decryption \
+    --query Parameter.Value \
+| jq -r . > /opt/oe/patterns/instance.json
+
+JICOFO_AUTH_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JICOFO_AUTH_PASSWORD)
+JVB_AUTH_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JVB_AUTH_PASSWORD)
+JIGASI_XMPP_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JIGASI_XMPP_PASSWORD)
+JIBRI_RECORDER_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JIBRI_RECORDER_PASSWORD)
+JIBRI_XMPP_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JIBRI_XMPP_PASSWORD)
+JIGASI_TRANSCRIBER_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .JIGASI_TRANSCRIBER_PASSWORD)
+
+JITSI_IMAGE_VERSION=$(cat /root/jitsi-image-version)
+# custom .env
+CUSTOM_DOT_ENV_CONFIG="# no custom config defined"
+if [[ "${CustomDotEnvParameterArn}" != "" ]]; then
+    CUSTOM_DOT_ENV_CONFIG_TITLE="# custom config fetched from ${CustomDotEnvParameterArn}"
+    CUSTOM_DOT_ENV_CONFIG_VALUE=$(aws ssm get-parameter --name "${CustomDotEnvParameterArn}" --with-decryption --output text --query Parameter.Value)
+    CUSTOM_DOT_ENV_CONFIG=$(printf "%s\n\n%s" "$CUSTOM_DOT_ENV_CONFIG_TITLE" "$CUSTOM_DOT_ENV_CONFIG_VALUE")
 fi
+cat <<EOF > /root/jitsi-docker-jitsi-meet/.env
+CONFIG=/s3/jitsi-meet-cfg
+HTTP_PORT=80
+HTTPS_PORT=443
+TZ=UTC
+PUBLIC_URL=https://${Hostname}
+JVB_ADVERTISE_IPS=$ip1,$ip2
+ENABLE_LETSENCRYPT=0
+JIGASI_PORT_MIN=20000
+JIGASI_PORT_MAX=20040
+JITSI_IMAGE_VERSION=$JITSI_IMAGE_VERSION
 
-while true; do
-    printf "$LETSENCRYPTEMAIL\n" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+JICOFO_AUTH_PASSWORD=$JICOFO_AUTH_PASSWORD
+JVB_AUTH_PASSWORD=$JVB_AUTH_PASSWORD
+JIGASI_XMPP_PASSWORD=$JIGASI_XMPP_PASSWORD
+JIGASI_TRANSCRIBER_PASSWORD=$JIGASI_TRANSCRIBER_PASSWORD
+JIBRI_RECORDER_PASSWORD=$JIBRI_RECORDER_PASSWORD
+JIBRI_XMPP_PASSWORD=$JIBRI_XMPP_PASSWORD
 
-    if [ $? -eq 0 ]
-    then
-        echo "LetsEncrypt success"
-        break
-    else
-        echo "Retry..."
-        # https://letsencrypt.org/docs/rate-limits/
-        sleep 30
-    fi
-done
-systemctl restart nginx
+$CUSTOM_DOT_ENV_CONFIG
+EOF
+
+cat <<EOF > /root/start.sh
+#!/usr/bin/env bash
+cd /root/jitsi-docker-jitsi-meet
+DOCKER_FILES="-f docker-compose.yml"
+if grep -q '^ENABLE_RECORDING=1' .env; then
+  DOCKER_FILES="\$DOCKER_FILES -f jibri.yml"
+fi
+if grep -q '^ENABLE_TRANSCRIPTIONS=1' .env; then
+  DOCKER_FILES="\$DOCKER_FILES -f transcriber.yml"
+fi
+if grep -q '^ETHERPAD_URL_BASE=' .env; then
+  DOCKER_FILES="\$DOCKER_FILES -f etherpad.yml"
+fi
+if grep -q '^JIGASI_SIP_URI=' .env; then
+  DOCKER_FILES="\$DOCKER_FILES -f jigasi.yml"
+fi
+docker compose \$DOCKER_FILES up -d
+EOF
+cat <<EOF > /root/stop.sh
+#!/usr/bin/env bash
+cd /root/jitsi-docker-jitsi-meet
+docker compose down
+EOF
+cat <<EOF > /root/restart.sh
+#!/usr/bin/env bash
+/root/stop.sh && /root/start.sh
+EOF
+chmod 755 /root/start.sh
+chmod 755 /root/stop.sh
+chmod 755 /root/restart.sh
+
+cat <<EOF > /etc/systemd/system/jitsi.service
+[Unit]
+Description=jitsi
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/root/start.sh
+ExecStop=/root/stop.sh
+WorkingDirectory=/root/jitsi-docker-jitsi-meet
+
+[Install]
+WantedBy=multi-user.target
+EOF
+# custom-config.js
+CUSTOM_CONFIG_JS_CONFIG="// no custom config defined"
+if [[ "${CustomConfigJsParameterArn}" != "" ]]; then
+    CUSTOM_CONFIG_JS_CONFIG_TITLE="// custom config fetched from ${CustomConfigJsParameterArn}"
+    CUSTOM_CONFIG_JS_CONFIG_VALUE=$(aws ssm get-parameter --name "${CustomConfigJsParameterArn}" --with-decryption --output text --query Parameter.Value)
+    CUSTOM_CONFIG_JS_CONFIG=$(printf "%s\n\n%s" "$CUSTOM_CONFIG_JS_CONFIG_TITLE" "$CUSTOM_CONFIG_JS_CONFIG_VALUE")
+fi
+# custom-interface_config.js
+CUSTOM_INTERFACE_CONFIG_JS_CONFIG="// no custom config defined"
+if [[ "${CustomInterfaceConfigJsParameterArn}" != "" ]]; then
+    CUSTOM_INTERFACE_CONFIG_JS_CONFIG_TITLE="// custom config fetched from ${CustomInterfaceConfigJsParameterArn}"
+    CUSTOM_INTERFACE_CONFIG_JS_CONFIG_VALUE=$(aws ssm get-parameter --name "${CustomInterfaceConfigJsParameterArn}" --with-decryption --output text --query Parameter.Value)
+    CUSTOM_INTERFACE_CONFIG_JS_CONFIG=$(printf "%s\n\n%s" "$CUSTOM_INTERFACE_CONFIG_JS_CONFIG_TITLE" "$CUSTOM_INTERFACE_CONFIG_JS_CONFIG_VALUE")
+fi
+echo "$CUSTOM_CONFIG_JS_CONFIG" > /s3/jitsi-meet-cfg/web/custom-config.js
+echo "$CUSTOM_INTERFACE_CONFIG_JS_CONFIG" > /s3/jitsi-meet-cfg/web/custom-interface_config.js
+
+systemctl enable jitsi.service
+systemctl start jitsi.service
 success=$?
 
 #
