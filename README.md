@@ -49,7 +49,7 @@ Direct access to the EC2 instance for maintenance and customizations is possible
 
 ## Jitsi Stack Infrastructure
 
-![Topology Diagram](https://ordinaryexperts.com/img/services/oe_jitsi_patterns_topology_diagram.png)
+![Topology Diagram](oe_jitsi_patterns_topology_diagram.png)
 
 ## Developer Setup
 
