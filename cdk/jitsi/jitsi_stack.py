@@ -238,11 +238,11 @@ class JitsiStack(Stack):
             self,
             "NlbSgJigasiIngress",
             cidr_ip=alb.ingress_cidr_param.value_as_string,
-            description="Allow 20000-20050 jigasi UDP traffic to NLB",
+            description="Allow 20000-20040 jigasi UDP traffic to NLB",
             from_port=20000,
             group_id=nlb_sg.ref,
             ip_protocol="udp",
-            to_port=20050
+            to_port=20040
         )
         aws_ec2.CfnSecurityGroupIngress(
             self,
@@ -257,12 +257,12 @@ class JitsiStack(Stack):
         aws_ec2.CfnSecurityGroupIngress(
             self,
             "SgAsgJigasiIngress",
-            description="Allow 20000-20050 UDP jigasi traffic from NLB to ASG",
+            description="Allow 20000-20040 UDP jigasi traffic from NLB to ASG",
             from_port=20000,
             group_id=asg.sg.ref,
             ip_protocol="udp",
             source_security_group_id=nlb_sg.ref,
-            to_port=20050
+            to_port=20040
         )
 
         nlb = aws_elasticloadbalancingv2.CfnLoadBalancer(
@@ -358,7 +358,34 @@ class JitsiStack(Stack):
             protocol="UDP"
         )
 
-        asg.asg.target_group_arns = [jitsi_target_group.ref, alb.target_group.ref]
+        jigasi_target_groups = []
+        # only going to 20040 instead of 20050 due to limit of
+        # 50 listeners on load balancers
+        for i in range(20000, 20040+1):
+            target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
+                self,
+                f"JigasiTargetGroup{i}",
+                port=i,
+                protocol="UDP",
+                target_type="instance",
+                vpc_id=vpc.id()
+            )
+            aws_elasticloadbalancingv2.CfnListener(
+                self,
+                f"JigasiListener{i}",
+                default_actions=[
+                    aws_elasticloadbalancingv2.CfnListener.ActionProperty(
+                        target_group_arn=target_group.ref,
+                        type="forward"
+                    )
+                ],
+                load_balancer_arn=nlb.ref,
+                port=i,
+                protocol="UDP"
+            )
+            jigasi_target_groups.append(target_group.ref)
+
+        asg.asg.target_group_arns = [jitsi_target_group.ref, alb.target_group.ref] + jigasi_target_groups
 
         record_set = aws_route53.CfnRecordSetGroup(
             self,
