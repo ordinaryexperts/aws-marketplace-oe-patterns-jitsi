@@ -199,10 +199,10 @@ class JitsiStack(Stack):
         # in this case the ALB is behind the NLB
         alb.http_ingress.cidr_ip = None
         alb.http_ingress.description = 'Allow HTTP traffic from NLB'
-        alb.http_ingress.source_security_group_id = nlb_sg.attr_id
+        alb.http_ingress.source_security_group_id = nlb_sg.attr_group_id
         alb.https_ingress.cidr_ip = None
         alb.https_ingress.description = 'Allow HTTPS traffic from NLB'
-        alb.https_ingress.source_security_group_id = nlb_sg.attr_id
+        alb.https_ingress.source_security_group_id = nlb_sg.attr_group_id
 
         aws_ec2.CfnSecurityGroupIngress(
             self,
