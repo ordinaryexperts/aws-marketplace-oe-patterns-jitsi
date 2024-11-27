@@ -95,27 +95,6 @@ class JitsiStack(Stack):
         )
 
         #
-        # CONDITIONS
-        #
-        custom_dot_env_parameter_arn_condition = CfnCondition(
-            self,
-            "CustomDotEnvParameterArnCondition",
-            expression=Fn.condition_not(Fn.condition_equals(custom_dot_env_parameter_arn_param.value, ""))
-        )
-
-        custom_config_js_parameter_arn_condition = CfnCondition(
-            self,
-            "CustomConfigJsParameterArnCondition",
-            expression=Fn.condition_not(Fn.condition_equals(custom_config_js_parameter_arn_param.value, ""))
-        )
-
-        custom_interface_config_js_parameter_arn_condition = CfnCondition(
-            self,
-            "CustomInterfaceConfigJsParameterArnCondition",
-            expression=Fn.condition_not(Fn.condition_equals(custom_interface_config_js_parameter_arn_param.value, ""))
-        )
-
-        #
         # RESOURCES
         #
 

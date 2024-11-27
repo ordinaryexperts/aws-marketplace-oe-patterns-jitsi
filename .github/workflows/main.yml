@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [ develop ]
   schedule:
-    - cron: '3 19 * * 1' # run Mondays at 3:19pm pacific
+    - cron: '3 19 * * 1' # run Mondays at 11:03am pacific during Standard Time, 12:03pm during Daylight Saving Time
 
 jobs:
   taskcat:
