@@ -195,6 +195,15 @@ class JitsiStack(Stack):
             vpc_id=vpc.id()
         )
         Tags.of(nlb_sg).add("Name", "{}/AlbSg".format(Aws.STACK_NAME))
+
+        # in this case the ALB is behind the NLB
+        alb.http_ingress.cidr_ip = None
+        alb.http_ingress.description = 'Allow HTTP traffic from NLB'
+        alb.http_ingress.source_security_group_id = nlb_sg.attr_id
+        alb.https_ingress.cidr_ip = None
+        alb.https_ingress.description = 'Allow HTTPS traffic from NLB'
+        alb.https_ingress.source_security_group_id = nlb_sg.attr_id
+
         aws_ec2.CfnSecurityGroupIngress(
             self,
             "NlbSgHttpIngress",
