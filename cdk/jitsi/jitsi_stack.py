@@ -169,7 +169,6 @@ class JitsiStack(Stack):
                 "SecretArn": secret.secret_arn(),
                 "AssetsBucket": assets_bucket.bucket_name()
             },
-            use_public_subnets=True,
             vpc=vpc
         )
 
