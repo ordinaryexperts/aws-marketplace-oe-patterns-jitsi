@@ -1,4 +1,4 @@
-FROM ordinaryexperts/aws-marketplace-patterns-devenv:2.3.2
+FROM ordinaryexperts/aws-marketplace-patterns-devenv:2.5.3
 
 # install dependencies
 RUN mkdir -p /tmp/code/cdk/jitsi
