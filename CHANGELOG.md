@@ -1,6 +1,12 @@
 # Unreleased
 ------------
+
+4.0.0
+-----
+* Upgrading to Jitsi version stable-9823
 * Upgrading to docker-based deployment
+* Use NLB --> ALB instead of EC2/EIP
+* Use ACM instead of Let's Encrypt for SSL
 * Adding CustomDotEnvParameterArn parameter
 * Adding CustomConfigJsParameterArn parameter
 * Adding CustomInterfaceConfigJsParameterArn parameter

@@ -169,6 +169,38 @@ systemctl enable jitsi.service
 systemctl start jitsi.service
 success=$?
 
+HOST_ENTRY="${Hostname}"
+# this is needed if service isn't publicly available
+if ! grep -q "127.0.0.1.*$HOST_ENTRY" /etc/hosts; then
+    sed -i "/127.0.0.1/s/$/ $HOST_ENTRY/" /etc/hosts
+fi
+
+URL="https://${Hostname}"
+TIMEOUT=15
+MAX_RETRIES=10
+
+# Only attempt wget if the service start was successful
+if [ $success -eq 0 ]; then
+    for ((i=1; i<=MAX_RETRIES; i++)); do
+        wget --no-check-certificate --timeout=$TIMEOUT --tries=1 --spider "$URL" >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            echo "Successfully reached $URL"
+            success=0  # Indicate success
+            break
+        fi
+        echo "Attempt $i/$MAX_RETRIES to reach $URL failed...retrying in $TIMEOUT seconds..."
+        sleep $TIMEOUT
+    done
+
+    if [ $i -gt $MAX_RETRIES ]; then
+        echo "Failed to reach $URL after $MAX_RETRIES attempts."
+        success=1  # Indicate failure
+    fi
+else
+    echo "Service failed to start. Skipping URL checks."
+    success=1  # Indicate failure
+fi
+
 #
 # cloudformation signal
 #
