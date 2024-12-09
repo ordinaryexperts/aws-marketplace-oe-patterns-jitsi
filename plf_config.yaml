@@ -54,7 +54,7 @@ This template allows customization of the Jitsi Meet interface and allows Jitsi 
 # region availability fields are here, i.e. "me-south-1 Availability"
 "Make available in all future U.S. regions": "FALSE"
 "Make available in all future non-U.S. regions": "FALSE"
-"Recommended Instance Type": "m5.xlarge"
+"Recommended Instance Type": "t3.xlarge"
 "Make available for all future instance types": "FALSE"
 # instance availability fields are here, i.e. "z1d.12xlarge Availability"
 "Pricing Model": "Hourly_Annual"

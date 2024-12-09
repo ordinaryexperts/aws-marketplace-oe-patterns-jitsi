@@ -1,8 +1,8 @@
 # Unreleased
 ------------
 
-4.0.0-stable-9823
------------------
+4.0.0
+-----
 * Upgrading to Jitsi version stable-9823
 * Upgrading to docker-based deployment
 * Use NLB --> ALB instead of EC2/EIP
