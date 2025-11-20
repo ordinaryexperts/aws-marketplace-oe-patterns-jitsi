@@ -184,6 +184,7 @@ class JitsiStack(Stack):
             self,
             "Asg",
             additional_iam_role_policies=[asg_update_secret_policy, asg_assets_bucket_policy],
+            ami_id=Fn.find_in_map("AWSAMIRegionMap", Aws.REGION, "AMI"),
             default_instance_type="t3.xlarge",
             secret_arns=[secret.secret_arn()],
             use_graviton=False,
