@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# aws cloudwatch
-sed -i 's/ASG_APP_LOG_GROUP_PLACEHOLDER/${AsgAppLogGroup}/g' /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-sed -i 's/ASG_SYSTEM_LOG_GROUP_PLACEHOLDER/${AsgSystemLogGroup}/g' /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-systemctl enable amazon-cloudwatch-agent
-systemctl start amazon-cloudwatch-agent
-
 function error_exit
 {
     cfn-signal --exit-code 1 --stack ${AWS::StackName} --resource Asg --region ${AWS::Region}
@@ -32,14 +26,14 @@ EOF
   awk -v n="$LINE_NUMBER" -v text="$TEXT" 'NR == n {print text} {print}' "$FILE" > "$TEMP_FILE"
   mv "$TEMP_FILE" "$FILE"
 }
-insert_logging_config "jvb" 419 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "jicofo" 332 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "prosody" 187 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "web" 6 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "jibri" 5 "/root/jitsi-docker-jitsi-meet/jibri.yml"
-insert_logging_config "jigasi" 6 "/root/jitsi-docker-jitsi-meet/jigasi.yml"
-insert_logging_config "etherpad" 6 "/root/jitsi-docker-jitsi-meet/etherpad.yml"
-insert_logging_config "transcriber" 5 "/root/jitsi-docker-jitsi-meet/transcriber.yml"
+insert_logging_config "jvb" 504 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jicofo" 435 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "prosody" 337 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "web" 187 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jibri" 66 "/root/jitsi-docker-jitsi-meet/jibri.yml"
+insert_logging_config "jigasi" 69 "/root/jitsi-docker-jitsi-meet/jigasi.yml"
+insert_logging_config "etherpad" 14 "/root/jitsi-docker-jitsi-meet/etherpad.yml"
+insert_logging_config "transcriber" 75 "/root/jitsi-docker-jitsi-meet/transcriber.yml"
 
 echo 's3fs#${AssetsBucket} /s3 fuse _netdev,allow_other,nonempty,iam_role=${IamRole} 0 0' >> /etc/fstab
 rm -rf /s3 && mkdir /s3
@@ -204,5 +198,4 @@ fi
 #
 # cloudformation signal
 #
-
 cfn-signal --exit-code $success --stack ${AWS::StackName} --resource Asg --region ${AWS::Region}

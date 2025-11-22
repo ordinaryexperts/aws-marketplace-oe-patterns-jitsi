@@ -114,8 +114,8 @@ EOF
 # Jitsi configuration
 #
 
-# https://github.com/jitsi/docker-jitsi-meet/releases/tag/stable-9823 # 11/12/2024
-JITSI_VERSION=stable-9823
+# https://github.com/jitsi/docker-jitsi-meet/releases/tag/stable-10590 # 10/20/2025
+JITSI_VERSION=stable-10590
 
 cd /root
 echo $JITSI_VERSION >> /root/jitsi-image-version
