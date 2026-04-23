@@ -57,6 +57,74 @@ We are following the [3 Musketeers](https://3musketeers.io/) pattern for project
 
 First, install [Docker](https://www.docker.com/), [Docker Compose](https://docs.docker.com/compose/), and [Make](https://www.gnu.org/software/make/).
 
+### Building AMI for Production Release
+
+To build an AMI in the production account for release:
+
+```bash
+AWS_PROFILE=oe-patterns-prod make ami-ec2-build
+```
+
+This will create an AMI in the production account with the name format: `ordinary-experts-patterns-jitsi-{VERSION}-{TIMESTAMP}`
+
+### Deploying to Production for Testing
+
+After building the AMI, synthesize the CloudFormation template and deploy:
+
+```bash
+# Synthesize template
+TEMPLATE_VERSION={VERSION} make synth-to-file
+
+# Upload to S3 (template is too large for direct deployment)
+AWS_PROFILE=oe-patterns-prod aws s3 cp dist/template.yaml \
+  s3://oe-patterns-production-testing-templates/jitsi-{VERSION}.yaml \
+  --region us-east-1
+
+# Deploy stack using S3 template URL
+AWS_PROFILE=oe-patterns-prod aws cloudformation create-stack \
+  --region us-east-1 \
+  --stack-name oe-patterns-jitsi-prod-test \
+  --template-url https://oe-patterns-production-testing-templates.s3.amazonaws.com/jitsi-{VERSION}.yaml \
+  --capabilities CAPABILITY_IAM \
+  --parameters \
+    ParameterKey=AlbCertificateArn,ParameterValue={YOUR_CERT_ARN} \
+    ParameterKey=AlbIngressCidr,ParameterValue=0.0.0.0/0 \
+    ParameterKey=AsgAmiIdv400,ParameterValue={AMI_ID} \
+    ParameterKey=DnsHostname,ParameterValue={YOUR_HOSTNAME} \
+    ParameterKey=DnsRoute53HostedZoneName,ParameterValue={YOUR_HOSTED_ZONE}
+```
+
+**Note:** The S3 bucket `oe-patterns-production-testing-templates` is used to host CloudFormation templates that exceed the 51,200 byte limit for direct API submissions.
+
+**Example deployment with actual values:**
+
+```bash
+# Using the following values:
+# - Certificate ARN: arn:aws:acm:us-east-1:879777583535:certificate/90a4a67f-57b9-44cb-a3ac-15f6d60f709e
+#   (This is the base certificate for patterns.ordinaryexperts.com with wildcard SAN)
+# - AMI ID: ami-0aeb66016e6b1dadf (from ami-ec2-build output)
+# - Hostname: test-jitsi.patterns.ordinaryexperts.com
+# - Hosted Zone: patterns.ordinaryexperts.com
+
+AWS_PROFILE=oe-patterns-prod aws cloudformation create-stack \
+  --region us-east-1 \
+  --stack-name oe-patterns-jitsi-prod-test \
+  --template-url https://oe-patterns-production-testing-templates.s3.amazonaws.com/jitsi-4.0.0-12-gb5da16f.yaml \
+  --capabilities CAPABILITY_IAM \
+  --parameters \
+    ParameterKey=AlbCertificateArn,ParameterValue=arn:aws:acm:us-east-1:879777583535:certificate/90a4a67f-57b9-44cb-a3ac-15f6d60f709e \
+    ParameterKey=AlbIngressCidr,ParameterValue=0.0.0.0/0 \
+    ParameterKey=AsgAmiIdv400,ParameterValue=ami-0aeb66016e6b1dadf \
+    ParameterKey=DnsHostname,ParameterValue=test-jitsi.patterns.ordinaryexperts.com \
+    ParameterKey=DnsRoute53HostedZoneName,ParameterValue=patterns.ordinaryexperts.com
+```
+
+**Important Notes:**
+- The certificate must be in the ISSUED state (not EXPIRED)
+- The certificate should cover the hostname either directly or via a wildcard SAN (e.g., `*.patterns.ordinaryexperts.com` covers `test-jitsi.patterns.ordinaryexperts.com`)
+- You can find valid certificates using: `aws acm list-certificates --certificate-statuses ISSUED --region us-east-1`
+- The AMI ID comes from the build output and should match the format `ami-xxxxxxxxxxxxxxxxx` (17 hex characters)
+
 ## Feedback
 
 To post feedback, submit feature ideas, or report bugs, use the [Issues section](https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-jitsi/issues) of this GitHub repo.

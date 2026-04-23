@@ -1,0 +1,18 @@
+# Integration Test Configuration
+# Override via environment variables: TEST_BASE_URL, TEST_STACK_NAME
+
+application:
+  name: "Jitsi Meet"
+  expected_version: "stable-10888"
+
+aws:
+  region: "us-east-1"
+  stack_name: "oe-patterns-jitsi-dylan"
+
+test:
+  timeout: 60
+  # Time to wait for each participant's video pipeline to initialize
+  join_wait_seconds: 15
+
+urls:
+  base_url: "https://jitsi-dylan.dev.patterns.ordinaryexperts.com"

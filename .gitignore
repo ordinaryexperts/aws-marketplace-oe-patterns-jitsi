@@ -6,6 +6,12 @@ __pycache__
 .env
 *.egg-info
 
+# Python virtual environments
+venv/
+.venv/
+*/venv/
+*/*/venv/
+
 # CDK asset staging directory
 .cdk.staging
 cdk.out
@@ -28,3 +34,8 @@ scripts/common/*
 
 # plf
 plf*.xlsx
+
+# log files
+logs/*
+
+.marketplace_changeset

@@ -26,14 +26,18 @@ EOF
   awk -v n="$LINE_NUMBER" -v text="$TEXT" 'NR == n {print text} {print}' "$FILE" > "$TEMP_FILE"
   mv "$TEMP_FILE" "$FILE"
 }
-insert_logging_config "jvb" 504 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "jicofo" 435 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "prosody" 337 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "web" 187 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "jibri" 66 "/root/jitsi-docker-jitsi-meet/jibri.yml"
-insert_logging_config "jigasi" 69 "/root/jitsi-docker-jitsi-meet/jigasi.yml"
-insert_logging_config "etherpad" 14 "/root/jitsi-docker-jitsi-meet/etherpad.yml"
-insert_logging_config "transcriber" 75 "/root/jitsi-docker-jitsi-meet/transcriber.yml"
+# Line numbers correspond to the `networks:` line of each service in
+# docker-jitsi-meet stable-10888's compose files (logging: is inserted
+# BEFORE that line so it lands at the end of the service's env block).
+# TODO: make pattern-based so this survives upstream shuffles.
+insert_logging_config "jvb" 513 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jicofo" 444 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "prosody" 346 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "web" 195 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jibri" 64 "/root/jitsi-docker-jitsi-meet/jibri.yml"
+insert_logging_config "jigasi" 67 "/root/jitsi-docker-jitsi-meet/jigasi.yml"
+insert_logging_config "etherpad" 12 "/root/jitsi-docker-jitsi-meet/etherpad.yml"
+insert_logging_config "transcriber" 73 "/root/jitsi-docker-jitsi-meet/transcriber.yml"
 
 echo 's3fs#${AssetsBucket} /s3 fuse _netdev,allow_other,nonempty,iam_role=${IamRole} 0 0' >> /etc/fstab
 rm -rf /s3 && mkdir /s3

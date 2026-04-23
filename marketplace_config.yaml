@@ -1,0 +1,104 @@
+# AWS Marketplace Product Configuration
+# For use with marketplace.py in devenv
+
+# Product IDs from AWS Marketplace Management Portal
+product_id: "ac194df3-6564-4b73-933a-99a8d35dac92"
+product_code: "a6sii3ist343j507uju6u0h3m"
+
+# IAM role in your prod account that allows AWS Marketplace to access your AMI
+ami_access_role_arn: "arn:aws:iam::879777583535:role/AWSMarketplaceAMIScanning"
+
+# Template publishing (uses existing S3 bucket)
+template_bucket: "ordinary-experts-aws-marketplace-pattern-artifacts"
+template_pattern: "jitsi"
+
+# AMI metadata
+operating_system: "UBUNTU"
+operating_system_version: "24.04"
+username: "ubuntu"
+
+# CloudFormation parameter pattern
+# Version 4.0.0 becomes AsgAmiIdv400
+ami_parameter_pattern: "AsgAmiIdv{version}"
+
+# AMI delivery option settings
+recommended_instance_type: "t3.medium"
+usage_instructions: "Run the stack. Click on the DnsSiteUrlOutput link to start a meeting. Check the GitHub repo for documentation: https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-jitsi"
+security_groups:
+  - IpProtocol: "tcp"
+    FromPort: 443
+    ToPort: 443
+    IpRanges:
+      - "0.0.0.0/0"
+
+# CloudFormation delivery option details
+delivery_option:
+  short_description: |
+    Deploy Jitsi Meet video conferencing with CloudFormation. Creates VPC, ALB with ACM certificate, Auto Scaling Group, Route 53 DNS, and CloudWatch logging.
+  long_description: |
+    This CloudFormation template deploys a production-ready Jitsi Meet environment.
+
+    WHAT'S DEPLOYED
+
+    - VPC with public and private subnets (or use your existing VPC)
+    - Network Load Balancer with Application Load Balancer for HTTPS
+    - Auto Scaling Group with EC2 instances
+    - Route 53 DNS record pointing to the load balancer
+    - CloudWatch Log Groups for application and system logs
+    - AWS Secrets Manager secret for secure credential storage
+    - IAM roles with least-privilege permissions
+
+    REQUIREMENTS
+
+    - Route 53 hosted zone for DNS
+    - ACM certificate for HTTPS
+  architecture_diagram_url: "https://ordinary-experts-aws-marketplace-pattern-artifacts.s3.amazonaws.com/jitsi/4.1.0/diagram.png"
+
+aws_calculator_url: ""
+
+# ============================================================================
+# Product Metadata (for reference - entered in AWS Marketplace Management Portal)
+# ============================================================================
+
+product_title: "Jitsi on AWS by FOSSonCloud"
+
+logo_url: "https://ordinaryexperts.com/img/products/jitsi-pattern/jitsi-on-aws-by-fossoncloud.png"
+
+short_description: |
+  Deploy Jitsi Meet video conferencing on AWS with this CloudFormation template + custom AMI. Production-ready infrastructure using AWS best practices with customizable interface and IP restrictions.
+
+long_description: |
+  Jitsi on AWS by FOSSonCloud provides a production-ready deployment of Jitsi Meet video conferencing using AWS best practices.
+
+  KEY FEATURES
+
+  - Full-Featured Video Conferencing - Host secure video meetings with screen sharing, chat, and recording capabilities
+  - Customizable Interface - Modify Jitsi Meet appearance and settings via SSM Parameters
+  - Access Control - Lock down access to specific IP address ranges
+  - High Availability - Auto Scaling Group ensures uptime and automatic recovery
+
+  INFRASTRUCTURE
+
+  CloudFormation deploys: VPC (or uses existing), Application Load Balancer with ACM certificate, Auto Scaling Group, Route53 DNS record, CloudWatch Logs, and SSM Parameter Store integration.
+
+  GETTING STARTED
+
+  1. Launch the CloudFormation stack with your DNS and certificate details
+  2. Wait for deployment to complete
+  3. Access Jitsi Meet at your configured hostname
+  4. Start or join a meeting immediately
+
+highlights:
+  - "Full-Featured Video Conferencing - Launch Jitsi Meet with screen sharing, chat, and recording in minutes"
+  - "Secure Access Control - Lock down access to specific IP address ranges for private meetings"
+  - "Customizable - Modify Jitsi Meet interface and settings via SSM Parameters"
+
+support_description: |
+  Support provided by FOSSonCloud
+
+  FREE ONBOARDING: We offer a complimentary one-hour onboarding session via Zoom to help you get started with your deployment.
+
+  ONGOING SUPPORT: After onboarding, support is available via email. We respond within 2 business days.
+
+  Documentation: https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-jitsi
+  Email: support@ordinaryexperts.com
