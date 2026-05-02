@@ -1,4 +1,4 @@
-SCRIPT_VERSION=1.6.0
+SCRIPT_VERSION=1.9.1
 SCRIPT_PREINSTALL=ubuntu_2204_2404_preinstall.sh
 SCRIPT_POSTINSTALL=ubuntu_2204_2404_postinstall.sh
 
@@ -114,8 +114,8 @@ EOF
 # Jitsi configuration
 #
 
-# https://github.com/jitsi/docker-jitsi-meet/releases/tag/stable-9823 # 11/12/2024
-JITSI_VERSION=stable-9823
+# https://github.com/jitsi/docker-jitsi-meet/releases/tag/stable-10888 # 3/30/2026
+JITSI_VERSION=stable-10888
 
 cd /root
 echo $JITSI_VERSION >> /root/jitsi-image-version
