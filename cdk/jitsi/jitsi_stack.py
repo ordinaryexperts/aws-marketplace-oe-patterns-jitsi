@@ -32,8 +32,8 @@ else:
     except:
         template_version = "CICD"
 
-AMI_ID="ami-002f46374624dcaee" # ordinary-experts-patterns-jitsi-4.0.0-9-g3bd10fa-20251120-0812
-NEXT_RELEASE_PREFIX="v400"
+AMI_ID="ami-0e988f3dbbb2202e0" # ordinary-experts-patterns-jitsi-4.1.1
+NEXT_RELEASE_PREFIX="v411"
 
 class JitsiStack(Stack):
 

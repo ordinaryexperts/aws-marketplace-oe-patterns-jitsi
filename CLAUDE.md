@@ -12,6 +12,10 @@ This is an AWS Marketplace pattern that deploys a production-ready Jitsi Meet in
 
 The infrastructure includes: VPC, EC2 Auto Scaling Groups, Network Load Balancer (NLB), Application Load Balancer (ALB), Route53, ACM, S3, Secrets Manager, SSM, and CloudWatch.
 
+## Upgrade Workflow
+
+For upgrading the upstream Jitsi version, follow the process in [aws-marketplace-utilities/UPGRADE.md](https://github.com/ordinaryexperts/aws-marketplace-utilities/blob/main/UPGRADE.md).
+
 ## Development Environment
 
 All development is done inside Docker containers via docker-compose to ensure consistency:
@@ -80,6 +84,31 @@ This downloads `common.mk` from the aws-marketplace-utilities repository (versio
 
 ### Publishing
 - `make publish TEMPLATE_VERSION=<version>` - Publish CloudFormation template to S3
+- `make publish-diagram TEMPLATE_VERSION=<version>` - Publish architecture diagram to S3
+
+**Important:** Use `oe-patterns-dev` profile for publishing templates and diagrams to S3:
+```bash
+AWS_PROFILE=oe-patterns-dev make publish TEMPLATE_VERSION=x.y.z
+AWS_PROFILE=oe-patterns-dev make publish-diagram TEMPLATE_VERSION=x.y.z
+```
+
+### AWS Marketplace Submission
+- `make marketplace-validate` - Check product is ready for version submission
+- `make marketplace-submit AMI_ID=<id> TEMPLATE_VERSION=<version>` - Submit a new version
+- `make marketplace-status` - Check submission status
+
+**Important:** Use `oe-patterns-prod` profile for Marketplace API calls (since the product is in that account):
+```bash
+AWS_PROFILE=oe-patterns-prod make marketplace-validate
+AWS_PROFILE=oe-patterns-prod make marketplace-submit AMI_ID=ami-xxx TEMPLATE_VERSION=x.y.z
+```
+
+**Prerequisites for marketplace-submit:**
+1. Run `make synth-to-file` to generate `dist/template.yaml`
+2. Publish template and diagram using `oe-patterns-dev` profile first
+3. Ensure `marketplace_config.yaml` has all required fields including `delivery_option` section
+4. Add release notes to `CHANGELOG.md` with a `## x.y.z` section
+5. Copy `diagram.png` from the architecture diagram file if needed
 
 ### Cleanup
 - `make clean` - Clean up test resources
