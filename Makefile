@@ -8,7 +8,7 @@ deploy: build
 	--require-approval never \
 	--parameters AlbCertificateArn=arn:aws:acm:us-east-1:992593896645:certificate/943928d7-bfce-469c-b1bf-11561024580e \
 	--parameters AlbIngressCidr=0.0.0.0/0 \
-	--parameters AsgAmiIdv410=ami-02691640f7dbc5aa1 \
+	--parameters AsgAmiIdv411=ami-02691640f7dbc5aa1 \
 	--parameters AsgReprovisionString=20251120.1 \
 	--parameters CustomDotEnvParameterArn=arn:aws:ssm:us-east-1:992593896645:parameter/oe-patterns-jitsi-dylan-custom-dot-env:4 \
 	--parameters CustomConfigJsParameterArn=arn:aws:ssm:us-east-1:992593896645:parameter/oe-patterns-jitsi-dylan-custom-config-js:1 \

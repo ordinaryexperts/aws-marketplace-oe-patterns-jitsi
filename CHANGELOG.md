@@ -1,6 +1,6 @@
 # Unreleased
 
-# 4.1.0
+# 4.1.1
 
 * Upgrading to Ubuntu 24.04
 * Upgrading to Jitsi version stable-10888
