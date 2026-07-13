@@ -134,7 +134,7 @@ cd jitsi-docker-jitsi-meet
 docker compose -f docker-compose.yml -f jibri.yml -f etherpad.yml -f jigasi.yml pull
 cd /root
 
-pip install boto3
+pip install --break-system-packages boto3
 cat <<EOF > /root/check-secrets.py
 #!/usr/bin/env python3
 
