@@ -1,4 +1,6 @@
-# Unreleased
+# 4.2.0
+
+* Upgrading to Jitsi version stable-11031
 
 # 4.1.1
 
