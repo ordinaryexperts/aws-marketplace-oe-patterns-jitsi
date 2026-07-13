@@ -149,8 +149,8 @@ This dual-load-balancer design allows SSL termination at ALB while supporting UD
 
 ### AMI Configuration
 
-The AMI is built via Packer (`packer/ami.json`) using `packer/ubuntu_2204_appinstall.sh`. It pre-installs:
-- Jitsi Meet (stable-9823)
+The AMI is built via Packer (`packer/ami.json`) using `packer/ubuntu_2404_appinstall.sh`. It pre-installs:
+- Jitsi Meet (stable-11031)
 - Docker and Docker Compose
 - CloudWatch agent
 - AWS Systems Manager agent
