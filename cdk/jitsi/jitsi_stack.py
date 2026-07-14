@@ -32,7 +32,7 @@ else:
     except:
         template_version = "CICD"
 
-AMI_ID="ami-089ce21920069978c" # ordinary-experts-patterns-jitsi-4.2.0-20260714-0452 (prod AMI for Marketplace submission)
+AMI_ID="ami-0711e8ddaf70a1ce9" # ordinary-experts-patterns-jitsi-4.2.0-20260713-1007 (dev AMI for taskcat)
 NEXT_RELEASE_PREFIX="v420"
 
 class JitsiStack(Stack):
