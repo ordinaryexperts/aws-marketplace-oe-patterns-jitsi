@@ -206,10 +206,9 @@ Jitsi secrets are:
 When building a new AMI:
 1. Run `make ami-ec2-build` to build in us-east-1
 2. Run `make ami-ec2-copy AMI_ID=ami-xxx` to copy to other regions
-3. Copy generated code block from output into `jitsi_stack.py`
-4. Update `AMI_ID` and `AMI_NAME` constants at top of `jitsi_stack.py`
+3. Update the `AMI_ID` constant at top of `jitsi_stack.py` to the new us-east-1 AMI
 
-The stack includes an assertion to ensure `AMI_ID` matches `generated_ami_ids["us-east-1"]`.
+There is no `generated_ami_ids` mapping or assertion in this codebase — `AMI_ID` is a single constant referenced directly by the `Asg` construct.
 
 ### Resource Tagging
 All resources are tagged via CDK's built-in tagging.
@@ -249,7 +248,7 @@ Defined in `cdk/setup.py`:
 
 ## Files to Update When Releasing
 
-1. `cdk/jitsi/jitsi_stack.py` - Update `AMI_ID`, `AMI_NAME`, and `generated_ami_ids` mapping
+1. `cdk/jitsi/jitsi_stack.py` - Update the `AMI_ID` constant
 2. `plf_config.yaml` - Product listing metadata (auto-updated by PLF scripts)
 3. `CHANGELOG.md` - Document changes
 4. Git tag with version number
