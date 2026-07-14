@@ -1,4 +1,7 @@
-# Unreleased
+# 4.2.0
+
+* Upgrading to Jitsi version stable-11031
+* Fixing boto3 install failure on Ubuntu 24.04 AMI (PEP 668 externally-managed-environment)
 
 # 4.1.1
 

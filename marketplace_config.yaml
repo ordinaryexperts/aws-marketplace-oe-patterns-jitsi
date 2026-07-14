@@ -52,7 +52,7 @@ delivery_option:
 
     - Route 53 hosted zone for DNS
     - ACM certificate for HTTPS
-  architecture_diagram_url: "https://ordinary-experts-aws-marketplace-pattern-artifacts.s3.amazonaws.com/jitsi/4.1.0/diagram.png"
+  architecture_diagram_url: "https://ordinary-experts-aws-marketplace-pattern-artifacts.s3.amazonaws.com/jitsi/4.2.0/diagram.png"
 
 aws_calculator_url: ""
 

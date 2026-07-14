@@ -27,12 +27,12 @@ EOF
   mv "$TEMP_FILE" "$FILE"
 }
 # Line numbers correspond to the `networks:` line of each service in
-# docker-jitsi-meet stable-10888's compose files (logging: is inserted
+# docker-jitsi-meet stable-11031's compose files (logging: is inserted
 # BEFORE that line so it lands at the end of the service's env block).
 # TODO: make pattern-based so this survives upstream shuffles.
-insert_logging_config "jvb" 513 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "jicofo" 444 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "prosody" 346 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jvb" 516 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jicofo" 447 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "prosody" 349 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
 insert_logging_config "web" 195 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
 insert_logging_config "jibri" 64 "/root/jitsi-docker-jitsi-meet/jibri.yml"
 insert_logging_config "jigasi" 67 "/root/jitsi-docker-jitsi-meet/jigasi.yml"
