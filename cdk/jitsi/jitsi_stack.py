@@ -32,8 +32,8 @@ else:
     except:
         template_version = "CICD"
 
-AMI_ID="ami-0711e8ddaf70a1ce9" # ordinary-experts-patterns-jitsi-4.2.0-20260713-1007 (dev AMI for taskcat)
-NEXT_RELEASE_PREFIX="v420"
+AMI_ID="ami-098a9fa36315e1911" # ordinary-experts-patterns-jitsi-4.3.0-20260918-1202 (dev AMI for taskcat)
+NEXT_RELEASE_PREFIX="v430"
 
 class JitsiStack(Stack):
 
@@ -236,6 +236,16 @@ class JitsiStack(Stack):
             source_security_group_id=nlb_sg.ref,
             to_port=20040
         )
+        aws_ec2.CfnSecurityGroupIngress(
+            self,
+            "AsgSgNlbHealthCheckIngress",
+            description="Allow TCP 80 health-check traffic from NLB to ASG (UDP target groups health-check on TCP 80)",
+            from_port=80,
+            group_id=asg.sg.ref,
+            ip_protocol="tcp",
+            source_security_group_id=nlb_sg.ref,
+            to_port=80
+        )
 
         nlb = aws_elasticloadbalancingv2.CfnLoadBalancer(
             self,
@@ -311,6 +321,11 @@ class JitsiStack(Stack):
         jitsi_target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
             self,
             "JitsiTargetGroup",
+            # UDP target groups can only be health-checked over TCP/HTTP/HTTPS
+            # and JVB does not listen on TCP 10000, so probe nginx on TCP 80
+            # (the NLB SG is allowed in via AsgSgNlbHealthCheckIngress)
+            health_check_port="80",
+            health_check_protocol="TCP",
             port=10000,
             protocol="UDP",
             target_type="instance",
@@ -337,6 +352,9 @@ class JitsiStack(Stack):
             target_group = aws_elasticloadbalancingv2.CfnTargetGroup(
                 self,
                 f"JigasiTargetGroup{i}",
+                # see JitsiTargetGroup: health-check on TCP 80, not the UDP port
+                health_check_port="80",
+                health_check_protocol="TCP",
                 port=i,
                 protocol="UDP",
                 target_type="instance",

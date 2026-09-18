@@ -9,40 +9,46 @@ function error_exit
 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
 INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/instance-id)
 
+# Inserts an awslogs logging block as the first key of the named service's
+# mapping, located by the service key line rather than a hardcoded line
+# number so it survives upstream compose file shuffles.
 function insert_logging_config() {
   local SERVICE=$1
-  local LINE_NUMBER=$2
-  local FILE=$3
+  local FILE=$2
 
-  TEXT=$(cat <<EOF
-        logging:
-            driver: awslogs
-            options:
-                awslogs-group: ${AsgAppLogGroup}
-                awslogs-stream: $INSTANCE_ID-${!SERVICE}
-EOF
-  )
   TEMP_FILE=$(mktemp)
-  awk -v n="$LINE_NUMBER" -v text="$TEXT" 'NR == n {print text} {print}' "$FILE" > "$TEMP_FILE"
+  awk -v svc="$SERVICE" -v group="${AsgAppLogGroup}" -v stream="$INSTANCE_ID-$SERVICE" '
+    {
+      print
+      if (!done && $0 ~ "^[ \t]+" svc ":[ \t]*$") {
+        match($0, /^[ \t]+/)
+        indent = substr($0, 1, RLENGTH)
+        print indent "    logging:"
+        print indent "        driver: awslogs"
+        print indent "        options:"
+        print indent "            awslogs-group: " group
+        print indent "            awslogs-stream: " stream
+        done = 1
+      }
+    }' "$FILE" > "$TEMP_FILE"
   mv "$TEMP_FILE" "$FILE"
 }
-# Line numbers correspond to the `networks:` line of each service in
-# docker-jitsi-meet stable-11031's compose files (logging: is inserted
-# BEFORE that line so it lands at the end of the service's env block).
-# TODO: make pattern-based so this survives upstream shuffles.
-insert_logging_config "jvb" 516 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "jicofo" 447 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "prosody" 349 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "web" 195 "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
-insert_logging_config "jibri" 64 "/root/jitsi-docker-jitsi-meet/jibri.yml"
-insert_logging_config "jigasi" 67 "/root/jitsi-docker-jitsi-meet/jigasi.yml"
-insert_logging_config "etherpad" 12 "/root/jitsi-docker-jitsi-meet/etherpad.yml"
-insert_logging_config "transcriber" 73 "/root/jitsi-docker-jitsi-meet/transcriber.yml"
+insert_logging_config "jvb" "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jicofo" "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "prosody" "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "web" "/root/jitsi-docker-jitsi-meet/docker-compose.yml"
+insert_logging_config "jibri" "/root/jitsi-docker-jitsi-meet/jibri.yml"
+insert_logging_config "jigasi" "/root/jitsi-docker-jitsi-meet/jigasi.yml"
+insert_logging_config "etherpad" "/root/jitsi-docker-jitsi-meet/etherpad.yml"
+insert_logging_config "transcriber" "/root/jitsi-docker-jitsi-meet/transcriber.yml"
 
 echo 's3fs#${AssetsBucket} /s3 fuse _netdev,allow_other,nonempty,iam_role=${IamRole} 0 0' >> /etc/fstab
 rm -rf /s3 && mkdir /s3
 mount -a
-mkdir -p /s3/jitsi-meet-cfg/{web,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri}
+mkdir -p /s3/jitsi-meet-cfg/{web,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri,transcriber,storage/{web,prosody,jibri,transcripts},tmp/web-load-test}
+# containers run rootless as uid 1000 (stable-11146+) and must own the
+# config/storage tree, including files left behind by earlier versions
+chown -R 1000:1000 /s3/jitsi-meet-cfg
 
 # find NLB static IPs
 dns_name="${Hostname}"

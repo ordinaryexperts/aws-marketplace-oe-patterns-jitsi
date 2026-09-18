@@ -1,4 +1,4 @@
-FROM ordinaryexperts/aws-marketplace-patterns-devenv:2.8.3
+FROM ordinaryexperts/aws-marketplace-patterns-devenv:2.8.6
 # For local testing, build from local devenv
 # FROM aws-marketplace-patterns-devenv
 

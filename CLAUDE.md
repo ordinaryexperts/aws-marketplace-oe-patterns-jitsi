@@ -65,6 +65,7 @@ This downloads `common.mk` from the aws-marketplace-utilities repository (versio
 
 ### Testing
 - `make lint` - Run linting checks
+- `make test-unit` - Run CDK unit tests (`cdk/tests/unit`) in the devenv container
 - `make test-main` - Run main integration test with taskcat (deploys actual stack)
 - `make test-all` - Run all integration tests (multi-region)
 
@@ -142,10 +143,12 @@ Jitsi requires both UDP (for video streaming) and HTTP/HTTPS (for web interface)
   - TCP ports 80/443 (proxied to ALB)
 - **ALB** behind NLB handles:
   - HTTP/HTTPS with ACM certificate
-  - Health checks
+  - HTTP/HTTPS health checks (UDP target groups health-check on TCP 80 against the instance; see below)
   - Target group management
 
 This dual-load-balancer design allows SSL termination at ALB while supporting UDP traffic through NLB.
+
+The UDP target groups (JVB 10000, Jigasi 20000-20040) cannot be health-checked over UDP, so they health-check on TCP 80 (nginx); the `AsgSgNlbHealthCheckIngress` rule allowing TCP 80 from the NLB security group into the ASG security group is required or every UDP target reports unhealthy.
 
 ### AMI Configuration
 
