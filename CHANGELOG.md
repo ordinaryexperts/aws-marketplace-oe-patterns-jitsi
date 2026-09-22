@@ -1,3 +1,12 @@
+# 4.3.0
+
+* Upgrading to Jitsi version stable-11248
+* Containers run rootless (uid 1000) as of stable-11146: the config/storage tree on the assets bucket is now chown'ed to 1000:1000 at boot, including files left behind by earlier versions, and the storage/transcriber directories are created up front
+* CloudWatch logging blocks are inserted into the upstream compose files by service name instead of hardcoded line numbers, so they survive upstream compose file changes
+* Bump oe-patterns-cdk-common 4.5.1 -> 4.5.2 (Lambda runtime python3.10 -> python3.13; AWS blocks creation of python3.10 functions since 2026-07-31)
+* Fixed NLB UDP target groups always reporting unhealthy: UDP target groups now health-check on TCP 80 and the instance security group allows the NLB's health-check probes on TCP 80. Previously every JVB/Jigasi UDP target showed Target.FailedHealthChecks on all deployments (traffic still flowed because NLBs fail open).
+* Upgrade devenv to 2.8.6 (pytest available in-container) and add CDK unit tests (`cdk/tests/unit`, run with `make test-unit`).
+
 # 4.2.0
 
 * Upgrading to Jitsi version stable-11031

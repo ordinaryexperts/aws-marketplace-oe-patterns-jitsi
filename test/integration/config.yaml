@@ -3,7 +3,7 @@
 
 application:
   name: "Jitsi Meet"
-  expected_version: "stable-10888"
+  expected_version: "stable-11248"
 
 aws:
   region: "us-east-1"

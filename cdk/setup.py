@@ -1,7 +1,7 @@
 import setuptools
 
 CDK_VERSION="2.225.0"
-OE_PATTERNS_CDK_COMMON_VERSION="4.5.0"
+OE_PATTERNS_CDK_COMMON_VERSION="4.5.2"
 
 setuptools.setup(
     name="jitsi",
